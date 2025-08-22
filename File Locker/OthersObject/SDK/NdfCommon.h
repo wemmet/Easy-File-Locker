@@ -46,6 +46,7 @@ typedef int LONG;
 #ifndef APPLE_HEADER_DEFINE
 #define APPLE_HEADER_DEFINE 1
 #include <Mactypes.h>
+#include <stdint.h>
 typedef uint32_t DWORD;
 //typedef signed char BOOL;
 typedef int LONG;

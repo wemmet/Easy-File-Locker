@@ -9,7 +9,7 @@ target 'File Locker' do
   pod "Bugly"
   pod "SVProgressHUD"
   
-  pod "ZipArchive(= '2.4.3')"
+  pod "ZipArchive"
   pod "UnrarKit"
   pod 'SSZipArchive'
   pod 'LzmaSDK-ObjC', :inhibit_warnings => true

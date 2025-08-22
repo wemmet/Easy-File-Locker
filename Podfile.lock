@@ -1,0 +1,40 @@
+PODS:
+  - Bugly (2.6.1)
+  - LzmaSDK-ObjC (2.1.1)
+  - SSZipArchive (2.4.3)
+  - SVProgressHUD (2.3.1):
+    - SVProgressHUD/Core (= 2.3.1)
+  - SVProgressHUD/Core (2.3.1)
+  - UnrarKit (2.10):
+    - UnrarKit/unrar-lib (= 2.10)
+  - UnrarKit/unrar-lib (2.10)
+  - ZipArchive (1.4.0)
+
+DEPENDENCIES:
+  - Bugly
+  - LzmaSDK-ObjC
+  - SSZipArchive
+  - SVProgressHUD
+  - UnrarKit
+  - ZipArchive
+
+SPEC REPOS:
+  trunk:
+    - Bugly
+    - LzmaSDK-ObjC
+    - SSZipArchive
+    - SVProgressHUD
+    - UnrarKit
+    - ZipArchive
+
+SPEC CHECKSUMS:
+  Bugly: 217ac2ce5f0f2626d43dbaa4f70764c953a26a31
+  LzmaSDK-ObjC: 6c68c37743a658fc9a4c7b70f7d6045b587aa42b
+  SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
+  SVProgressHUD: 4837c74bdfe2e51e8821c397825996a8d7de6e22
+  UnrarKit: 62f535c7a34ec52d2514b9b148f33dcfa9a9dc39
+  ZipArchive: e25a4373192673e3229ac8d6e9f64a3e5713c966
+
+PODFILE CHECKSUM: 636972c11b514d9c97ca8e449f20e692d473c85e
+
+COCOAPODS: 1.16.2
