@@ -1,0 +1,117 @@
+"appName" = "Easy File Locker";
+"Home_Item0" = "浏览加密文件";
+"Home_Item1" = "视频加密";
+"Home_Item2" = "图片加密";
+"Home_Item3" = "电脑手机文件互传";
+
+"bingAlertMessage" = "第一次查看本文件，会自动绑定设备 “";
+"bingAlertMessage1" = "”，以后只能使用这台设备查看。\n查看并同意绑定？";
+"strInfoHit" = "温馨提示";
+"checkNetwork" = "请检查当前网络";
+"Ok" = "确认";
+"Cancel" = "取消";
+"RegisterMessage" = "没有权限播放该文件!";
+"JumpPage" = "跳至页面";
+"EnterThePageNumber" = "输入页码";
+"FullScreen" = "全屏播放";
+"Password" = "密码";
+"UserPassword" = "用户名密码";
+"PleaseEnterUserName" = "请输入用户名";
+"strLogInPW" = "请输入密码";
+"strProtect" = "没有权限播放该文件!";
+"DisablePlayMessage" = "当前播放密码已经被禁用!";
+"PasswordError" = "密码错误!";
+"MachineCode" = "机器码:";
+"Copy" = "复制";
+"CopyMachineCode" = "请复制机器码发给此GEM文件的发布者获取播放密码";
+"PlayPassword" = "请输入播放密码:";
+"RemenberPassword" = "记住密码";
+"Start" = "开始预览";
+"nRegisterMessage" = "这是Gilisoft Copy Protect试用版本. \n用户名: Admin \n密码: 123456\n购买软件可以关闭该提示窗口，并且可以使用全部功能";
+"DisableRunVir" = "当前文件不允许虚拟机运行";
+"CheckTheCurrentNetwork" = "请检查当前网络";
+"DisableFileMessage" = "当前文件已被禁止播放！";
+"UserNameOrPasswordError" = "用户名或密码错误";
+"PasswordError" = "密码错误";
+"strUnSupportFile" = "暂不支持该文件类型";
+"strErrorPlayPW" = "播放密码与当前文件不一致，请联系作者！";
+"strMachineCodeErrorPlayPW" = "机器码与当前文件不一致，请联系作者！";
+"strPlayPasswordErrorPW" = "请先输入播放密码";
+"strOpenFileError" = "打开文件失败";
+"strErrorPlayDate" = "已经超过允许的播放日期，请联系作者！";
+
+"strVolume" = "音量设置";
+"strSpeed" = "播放速度";
+"strEnterAnswer" = "请输入答案";
+
+"inputView.title" = "文件名";
+"inputView.fileNameField" = "请输入文件名";
+"inputView.passwordField" = "请输入密码";
+"inputView.passwordField2" = "请确认密码";
+"inputView.okBtn" = "开始制作";
+"inputView.CancelBtn" = "停止制作";
+
+"more.title" = "更多操作";
+"more.share" = "分享";
+"more.delete" = "删除";
+"more.cancel" = "取消";
+
+"fileList.title" = "文件列表";
+"fileList.empty" = "当前没有数据";
+
+"moreplay.title" = "请选择";
+"moreplay.Files" = "浏览手机中的加密文件";
+"moreplay.Sandbox" = "浏览WIFI传入的加密文件";
+"moreplay.Cancel" = "取消";
+
+
+"EncryptedFiles" = "文件加密中,请稍等...";
+"enableLabel.title" = "开启密码保护";
+
+
+"home_Tip" = "简介";
+"home_TipContent" = "Easy File Locker 可让你使用密码对各种多个文件进行加密，例如视频、音频、图像等。没有密码，任何人都无法查看文件内容。";
+
+"home_Format" = "支持的格式:";
+"home_FormatContent" = "我们支持大多数流行的视频、音频、图像，下面列出了其中的一些：";
+
+"home_SupperVFormat" = "视频文件：";
+"home_SupperPFormat" = "图片文件：";
+
+"showTips_1" = "文件名不能为空";
+"showTips_2" = "密码不能为空";
+"showTips_3" = "两次输入的密码不一致";
+"倍" = "倍";
+"正常" = "正常";
+"选择图片" = "选择图片";
+"选择视频" = "选择视频";
+"完成" = "完成";
+"图片处理中" = "图片处理中...";
+"视频处理中" = "视频处理中...";
+"需要访问相册权限" = "需要访问相册权限";
+"请在设置中允许访问相册" = "请在设置中允许访问相册";
+"设置" = "设置";
+"设置" = "设置";
+
+
+"Alert.NetworkTitle" = "网络不可用";
+"Alert.NetworkMessage" = "请检查您的网络连接";
+
+"WifiSendFile.title" = "WIFI 传输";
+"WifiSend.prologue" = "注意:<br>  为了保证文件传输成功<br>- 请确保您的手机和电脑在同一个无线网络里;<br>-  请确保手机端PV软件不要离开Wi-Fi传输页面，且不要锁屏；<br><br>- 批量传输文件请使用Chrome浏览器<br><br>- 拖放文件到此窗口或者使用按钮\"传文件到手机\"以传输电脑上的文件到手机。";
+"WifiSendFileVC_labeltext1" = "重要:请确保当前设备和电脑在同一局域网内。";
+"WifiSendFileVC_labeltext2" = "然后在电脑端打开浏览器，输入以下地址：";
+"WifiSendFileVC_labeltext3" = "\n提示：您可以上传gem/gcp/gfx/ 图片、音视频文件。上传成功后, 即可使用本APP打开浏览。";
+"RDWifiServer not check" = "没有检测到服务器";
+"RDWifiServer not running!" = "没有打开服务器";
+"跳至页面" = "跳至页面";
+"输入页码" = "输入页码";
+
+
+"WifiSendFile.Alert.Title" = "温馨提示";
+"WifiSendFile.Alert.Message" = "将断开与电脑的连接，是否继续？";
+"WifiSendFile.Alert.Cancel" = "取消";
+"WifiSendFile.Alert.OK" = "确定";
+"Files Analyzing..." = "文件分析中...";
+"File parsing in progress... Please wait." = "正在解析文件，请稍后。";
+"请稍后..." = "请稍后...";

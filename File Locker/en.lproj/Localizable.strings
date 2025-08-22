@@ -1,0 +1,123 @@
+"appName" = "Easy File Locker";
+"Home_Item0" = "Load Encrypted Files";
+"Home_Item1" = "Videos Encrypt";
+"Home_Item2" = "Images Encrypt";
+"Home_Item3" = "Files transfer between PC and phones";
+
+"bingAlertMessage" = "The first time you view this file, the device \"";
+"bingAlertMessage1" = "\", will be bound automatically. You can only use this device to view it later. \nView and agree to bind?";
+"strInfoHit" = "Information";
+"checkNetwork" = "Please check the current network";
+"Ok" = "Ok";
+"Cancel" = "Cancel";
+"RegisterMessage" = "There is no permission to play the file!";
+"DisablePlayMessage" = "The current playback password has been disabled!";
+"JumpPage" = "Jump to the specified page";
+"EnterThePageNumber" = "Enter the page number";
+"FullScreen" = "Full Screen";
+"Password" = "Password";
+"UserPassword" = "User's Name and Password";
+"PleaseEnterUserName" = "Please enter user name";
+"strLogInPW" = "Please enter password";
+"strProtect" = "This file is protected and can only be run from the drive it is prepared for!";
+"PasswordError" = "Password is wrong!";
+"MachineCode" = "MachineCode:";
+"Copy" = "Copy";
+"CopyMachineCode" = "Please copy the machine code and send it to the publisher of this gem file to obtain the playing password";
+"PlayPassword" = "Enter password:";
+"RemenberPassword" = "Remenber password";
+"Start" = "Start";
+"nRegisterMessage" = "This is a trial version of Gilisoft Copy Protect.\nUser Name: Admin \nPassword: 123456\nTo unshow this window and use all the features, pease purchase the software.";
+"DisableRunVir" = "The virtual machine is not allowed to run for the current file.";
+"CheckTheCurrentNetwork" = "Please check the current network";
+"DisableFileMessage" = "The file has been disabled!";
+"UserNameOrPasswordError" = "Username or password error!";
+"PasswordError" = "Password error!";
+"strUnSupportFile" = "This file type is not supported at this time";
+"strErrorPlayPW" = "The playing password is inconsistent with the current file, please contact the author! ";
+"strMachineCodeErrorPlayPW" = "The machineCode is inconsistent with the current file, please contact the author! ";
+"strPlayPasswordErrorPW" = "Please enter play password!";
+"strOpenFileError" = "Open file failed!";
+"strErrorPlayDate" = "The allowed playing date has been exceeded, please contact the author!";
+
+"strVolume" = "Volume";
+"strSpeed" = "Speed";
+"strEnterAnswer" = "Please enter the answer";
+
+"inputView.title" = "File Name";
+"inputView.fileNameField" = "Enter file name";
+"inputView.passwordField" = "Please enter the password";
+"inputView.passwordField2" = "Please confirm the password";
+"inputView.okBtn" = "Start";
+"inputView.CancelBtn" = "Stop";
+
+"more.title" = "More";
+"more.share" = "Share";
+"more.delete" = "Delete";
+"more.cancel" = "Cancel";
+
+"fileList.title" = "File List";
+"fileList.empty" = "Datas is Empty";
+
+"moreplay.title" = "Please Choose Files";
+"moreplay.Files" = "Load encrypted files in phone";
+"moreplay.Sandbox" = "Load encrypted files from WIFI";
+"moreplay.Cancel" = "Cancel";
+
+"EncryptedFiles" = "Encrypte files,waiting...";
+"enableLabel.title" = "Enable Password Protection";
+
+
+"home_Tip" = "Description";
+"home_TipContent" = "Easy File Locker allows you to encrypt various types of files, such as videos, audio files, and images, with a password. Without the correct password, nobody can view or access the contents of these files.";
+"home_Format" = "Formats Support";
+"home_FormatContent" = "We support most popular video, audio, images, some of them is listed below:";
+
+"home_SupperVFormat" = "Videos：";
+"home_SupperPFormat" = "Images：";
+
+"showTips_1" = "The file name cannot be empty";
+"showTips_2" = "The password cannot be empty";
+"showTips_3" = "The passwords entered twice are inconsistent";
+
+"倍" = "x";
+"正常" = "Normal";
+"选择图片" = "Choose Pictures";
+"选择视频" = "Choose Videos";
+"完成" = "Done";
+"图片处理中" = "Adding Images...";
+"视频处理中" = "Adding Videos...";
+
+"需要访问相册权限" = "Permission to access the photo album is required";
+"请在设置中允许访问相册" = "Please allow access to the photo album in the settings.";
+"设置" = "Settings";
+"设置" = "Cancel";
+
+"制作文件失败" = "Create encrypted file is failed";
+"添加文件失败" = "Add file is failed";
+"设置密码失败" = "Set password if failed";
+
+"Alert.NetworkTitle" = "Not Network";
+"Alert.NetworkMessage" = "Please check your network connection.";
+
+"WifiSendFile.title" = "Wifi Transfer";
+"WifiSend.prologue" = "Note:<br>  To ensure successful file transfer<br>- Please make sure your phone and computer are connected to the same Wi-Fi network;<br>-  Please ensure that the PV software on your phone remains on the Wi-Fi transfer page and that the screen is not locked
+    ;<br>-  For batch file transfers, please use the Chrome browser;<br>-  Drag and drop files into this window or use the 'Transfer Files to Phone' button to transfer files from your computer to your phone.";
+"WifiSendFileVC_labeltext1" = "Important: Ensure that this device and your computer are connected to the same local network (LAN).";
+"WifiSendFileVC_labeltext2" = "Then, open a web browser on your computer and enter the following address:";
+"WifiSendFileVC_labeltext3" = "\nTip: You can upload gem, gcp, gfx files, as well as images and audio/video files. Once uploaded successfully, you can open and view these files using this app.";
+"striCloudHit" = "iCloud not available ";
+"RDWifiServer not check" = "WifiServer not available";
+"RDWifiServer not running!" = "WifiServer not running";
+"跳至页面" = "Jump to the specified page";
+"输入页码" = "Enter the page number";
+
+
+"WifiSendFile.Alert.Title" = "Information";
+"WifiSendFile.Alert.Message" = "Will be disconnected from your computer. Do you want to continue? ";
+"WifiSendFile.Alert.Cancel" = "Cancel";
+"WifiSendFile.Alert.OK" = "Ok";
+
+"File parsing in progress... Please wait." = "File parsing in progress... Please wait.";
+"Files Analyzing..." = "Files Analyzing...";
+"请稍后..." = "Please Wait...";
