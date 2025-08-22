@@ -25,8 +25,8 @@
 #import <dispatch/dispatch.h>
 #import <Photos/Photos.h>
 #include "MD5.h"
-//#import "SSZipArchive.h"
-//#import <ZipArchive/ZipArchive.h>
+#import "SSZipArchive.h"
+#import <ZipArchive/ZipArchive.h>
 
 #define IMAGE_MAX_SIZE_WIDTH 1080
 #define IMAGE_MAX_SIZE_HEIGHT 1080
@@ -2316,33 +2316,33 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
 }
 
 
-//+ (BOOL)OpenZip:(NSString*)zipPath  unzipto:(NSString*)_unzipto
-//{
-//    ZipArchive* zip = [[ZipArchive alloc] init];
-//    if( [zip UnzipOpenFile:zipPath] )
-//    {
-//        //NSInteger index =0;
-//        BOOL ret = [zip UnzipFileTo:_unzipto overWrite:YES];
-//        if( NO==ret )
-//        {
-//            NSLog(@"error");
-//        }else{
-//            unlink([zipPath UTF8String]);
-//        }
-//        [zip UnzipCloseFile];
-//        if (ret) {
-//            NSFileManager *fileManager = [NSFileManager defaultManager];
-//            NSArray *fileArray = [fileManager contentsOfDirectoryAtPath:_unzipto error:nil];
-//            [fileArray enumerateObjectsUsingBlock:^(NSString * _Nonnull fileName, NSUInteger idx, BOOL * _Nonnull stop) {
-//                if([fileName containsString:@"__MACOSX"]) {
-//                    [fileManager removeItemAtPath:[_unzipto stringByAppendingPathComponent:fileName] error:nil];
-//                }
-//            }];
-//        }
-//        return YES;
-//    }
-//    return NO;
-//}
++ (BOOL)OpenZip:(NSString*)zipPath  unzipto:(NSString*)_unzipto
+{
+    ZipArchive* zip = [[ZipArchive alloc] init];
+    if( [zip UnzipOpenFile:zipPath] )
+    {
+        //NSInteger index =0;
+        BOOL ret = [zip UnzipFileTo:_unzipto overWrite:YES];
+        if( NO==ret )
+        {
+            NSLog(@"error");
+        }else{
+            unlink([zipPath UTF8String]);
+        }
+        [zip UnzipCloseFile];
+        if (ret) {
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+            NSArray *fileArray = [fileManager contentsOfDirectoryAtPath:_unzipto error:nil];
+            [fileArray enumerateObjectsUsingBlock:^(NSString * _Nonnull fileName, NSUInteger idx, BOOL * _Nonnull stop) {
+                if([fileName containsString:@"__MACOSX"]) {
+                    [fileManager removeItemAtPath:[_unzipto stringByAppendingPathComponent:fileName] error:nil];
+                }
+            }];
+        }
+        return YES;
+    }
+    return NO;
+}
 
 + (UIViewController *)getCurrentVCFrom:(UIViewController *)rootVC
 {
