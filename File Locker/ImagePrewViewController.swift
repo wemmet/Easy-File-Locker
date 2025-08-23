@@ -451,6 +451,10 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
         forwardBtn!.isEnabled = _selectIndex! < _pdfCount! - 1
         gobackBtn!.isEnabled = (_selectIndex! > 0)
         pageBtn.setTitle("\((_selectIndex ?? 0) + 1)/\(_pdfCount ?? 0)", for: .normal)
+        if(Float(_readMaxPdfCount!) > 0 && _selectIndex! >= ((_readMaxPdfCount! as? Int)!)){
+            self._imageView.image = HelpClass.disablePreImage()
+            return
+        }
         if(_gem_hobj != nil){
             HelpClass.openPdf(_gem_hobj!, temppath: _tempPath!, width: Float(UIScreen.main.bounds.size.width * UIScreen.main.scale), pdfImageIndex: _selectIndex!) { [weak self] ( rotation, count, image) in
                 guard let self = self else { return }
@@ -488,6 +492,11 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
         gobackBtn!.isEnabled = (_selectIndex! > 0)
         forwardBtn!.isEnabled = (_selectIndex! < _pdfCount! - 1)
         pageBtn.setTitle("\((_selectIndex ?? 0) + 1)/\(_pdfCount ?? 0)", for: .normal)
+        if(Float(_readMaxPdfCount!) > 0 && _selectIndex! >= ((_readMaxPdfCount! as? Int)!)){
+            //forwardBtn!.isEnabled = false
+            self._imageView.image = HelpClass.disablePreImage()
+            return
+        }
         if(_gem_hobj != nil){
             HelpClass.openPdf(_gem_hobj!, temppath: _tempPath!, width: Float(UIScreen.main.bounds.size.width * UIScreen.main.scale), pdfImageIndex: _selectIndex!) { [weak self] ( rotation, count, image) in
                 guard let self = self else { return }
@@ -611,11 +620,14 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
         _selectIndex = (Int(pageTextField.text!) ?? 1) - 1
         _selectIndex = Int(HelpClass.min(Float(_selectIndex!), num2: Float(_pdfCount!) - 1))
         _selectIndex = Int(HelpClass.max(Float(_selectIndex!), num2: 0))
-        
         forwardBtn!.isEnabled = _selectIndex! < _pdfCount! - 1
         gobackBtn!.isEnabled = (_selectIndex! > 0)
-        
         pageBtn.setTitle("\((_selectIndex ?? 0) + 1)/\(_pdfCount ?? 0)", for: .normal)
+        if(Float(_readMaxPdfCount!) > 0 && _selectIndex! >= ((_readMaxPdfCount! as? Int)!)){
+            self._imageView.image = HelpClass.disablePreImage()
+            return
+        }
+        
         if(_gem_hobj != nil){
             HelpClass.openPdf(_gem_hobj!, temppath: _tempPath!, width: Float(UIScreen.main.bounds.size.width * UIScreen.main.scale), pdfImageIndex: _selectIndex!) { [weak self] ( rotation, count, image) in
                 guard let self = self else { return }
@@ -649,6 +661,9 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
     }
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
+        if(textField.text!.count <= 0){
+            return true
+        }
         self.confirmBtnAction()
         return true
         

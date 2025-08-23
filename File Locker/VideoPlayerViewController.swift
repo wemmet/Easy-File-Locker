@@ -47,14 +47,14 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     var _user_param : DRM_USER_CONTROL_PARAM? = nil
     @objc var _gemPath : String? = nil
     @objc var _md5Path : String? = nil
+    @objc var _lience : String? = nil
     @objc var _playerPath : String? = nil
     var _passwordStr : String? = nil
     var _passwordlen : Int? = 0
     var _gemGUID : String? = ""
-    var _nCheckTimeUseNetTime : Int? = 0
+    var _nCheckSeekTimeDisable : Int? = 0
     
-    var _playCount : Int? = 0
-    var _maxCount : Int? = 0
+    var _nMaxPlayCount : Int? = 0
     var _nPlayTime : Int? = 0
     var _selectTemPathIndex : Int? = 0
     var _playerIndex : Int? = 0
@@ -435,6 +435,7 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         self.updateProgress()
         setupGestureRecognizers()
         view.addSubview(_titleView!)
+        
     }
     @objc func setsAction(_ sender : UIButton){
         if _menuView != nil {
@@ -445,6 +446,19 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     }
     private func setupPlayer() {
         guard _playerPath != nil else { return }
+        var PlayCount_Key : String? = nil
+        var player_path_md5 = "";
+        if(_playerPath != nil){
+            player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
+        }
+        if _lience != nil {
+            PlayCount_Key = _lience! as String + "_" + _md5Path! + "_" + player_path_md5 + "_PlayCount"
+        }
+        else{
+            PlayCount_Key =  _md5Path! + "_" + player_path_md5 + "_PlayCount";
+        }
+        let playCount : Int = UserDefaults().integer(forKey: PlayCount_Key!)
+        UserDefaults().setValue((playCount + 1), forKey: PlayCount_Key!)
         //MARK: - 初始化视频播放源
         if _isGemFile == true {
             if !FileManager.default.fileExists(atPath: _gemPath!) {
@@ -514,19 +528,21 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
             UIWindow .showTips(NSLocalizedString("初始化播放器句柄失败", comment: ""))
             return;
         }else{
+            var pathMd5Code : String? = nil
             if(_gemPath != nil){
                 var key : String = _playerPath!
                 let list = _playerPath!.components(separatedBy: "/Documents/")
                 if(list.count > 1){
                     key = list.last!;
                 }
-                let pathMd5Code = HelpClass.getFileMD5Code(_gemPath!)
-                _configerKey = pathMd5Code + "_config_" + key
+                pathMd5Code = HelpClass.getFileMD5Code(_gemPath!)
+                _configerKey = pathMd5Code! + "_config_" + key
             }
             else{
-                let pathMd5Code = HelpClass.getFileMD5Code(_playerPath!)
-                _configerKey = pathMd5Code + "_config_" + "notGemFile"
+                pathMd5Code = HelpClass.getFileMD5Code(_playerPath!)
+                _configerKey = pathMd5Code! + "_config_" + "notGemFile"
             }
+            
             print("\n_configerKey:",_configerKey)
             let userDefaults = UserDefaults.standard
             var config = userDefaults.object(forKey: _configerKey!) as? [String: Any]
@@ -784,6 +800,11 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
                 self.removeTimer()
                 _kplayer?.pause()
                 _kplayer?.stop()
+                _kplayer?.seekTime(CMTimeMake(value: 0, timescale: Int32(NSEC_PER_SEC)))
+                self.progressSlider?.value = 0
+                self.currentTimeLabel?.text = HelpClass.timeFormatted(0)
+                self.config(forPath: 0, duration: Float(duration))
+                UIWindow .showTips(NSLocalizedString("strNotPlayDuration", comment: ""))
                 return
             }
             let time = currentSeconds
@@ -1107,6 +1128,7 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         progressSlider!.minimumValue = 0
         progressSlider!.maximumValue = 1
         progressSlider!.value = 0
+        progressSlider!.isEnabled = _nCheckSeekTimeDisable == 0 ? true : false;
         progressSlider!.setThumbImage(UIImage(named: "Detail_Drag_Normal"), for: .normal)
         progressSlider!.setThumbImage(UIImage(named: "Detail_Drag_Down"), for: .highlighted)
         playerBarView.addSubview(progressSlider!)
@@ -1135,12 +1157,14 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         _leftTimeBtn!.setImage(UIImage(named: "last10_Normal"), for: .normal)
         _leftTimeBtn!.addTarget(self, action: #selector(leftTimeBtnAction), for: .touchUpInside)
         _leftTimeBtn!.adjustsImageWhenHighlighted = false;
+        _leftTimeBtn!.isEnabled = progressSlider!.isEnabled
         playerBarView.addSubview(_leftTimeBtn!)
         
         _rightTimeBtn = UIButton.init(frame: CGRectMake(CGRectGetMaxX(playPauseButton!.frame) + 20, 44, 44, 44))
         _rightTimeBtn!.setImage(UIImage(named: "next30_Normal"), for: .normal)
         _rightTimeBtn!.addTarget(self, action: #selector(rightTimeBtnAction), for: .touchUpInside)
         _rightTimeBtn!.adjustsImageWhenHighlighted = false;
+        _rightTimeBtn!.isEnabled = progressSlider!.isEnabled
         playerBarView.addSubview(_rightTimeBtn!)
         
         if(_isVideo == false){
@@ -1299,6 +1323,30 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
 
     @objc private func playPauseTapped() {
         if _isPlaying == false {
+            let reachability = HelpClass.reachability()
+            if reachability.currentReachabilityStatus() != .notReachable {
+                if(_playCfg!.nDisableOnLine == 1){
+                    UIWindow .showTips(NSLocalizedString("strNotPlayWithNet", comment: ""))
+                    return;
+                }
+            }
+            
+            var PlayCount_Key : String? = nil
+            var player_path_md5 = "";
+            if(_playerPath != nil){
+                player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
+            }
+            if _lience != nil {
+                PlayCount_Key = _lience! as String + "_" + _md5Path! + "_" + player_path_md5 + "_PlayCount"
+            }
+            else{
+                PlayCount_Key =  _md5Path! + "_" + player_path_md5 + "_PlayCount";
+            }
+            let playCount : Int = UserDefaults().integer(forKey: PlayCount_Key!)
+            if (playCount > (_nMaxPlayCount as? Int ?? 0) && ((_nMaxPlayCount as? Int ?? 0) > 0)) {
+                UIWindow .showTips(NSLocalizedString("strErrorPlayTimes", comment: ""))
+                return
+            }
             _kplayer?.play()
             _isPlaying = true
             playPauseButton!.setImage(UIImage(named: "Detail_Pause"), for: .normal)

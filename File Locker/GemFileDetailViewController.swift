@@ -365,31 +365,31 @@ class GemFileDetailViewController: UIViewController, UITableViewDataSource, UITa
                     }
                     
                 } else {
+                    
                     let playerVC = VideoPlayerViewController()
                     playerVC._isHostAppRun = isHostAppRun!.boolValue
                     playerVC.gem_hobj = gem_hobj!
                     playerVC._playCfg = playCfg
+                    playerVC._nMaxPlayCount = gemFile.nMaxNum as? Int;
                     if(user_param != nil){
                         playerVC._fileType = .PkgFileType_Gcp
+                        playerVC._nMaxPlayCount = user_param?.nPlayCount as? Int;
                     }
                     playerVC._gcpCfg = gcpCfg
                     playerVC._user_param = user_param
                     playerVC._isGemFile = true
                     playerVC._gemPath = _path
                     playerVC._md5Path = szMD5PathCode
+                    playerVC._lience = gemFile.szLicence as? String ?? "";
                     playerVC._playerPath = gemFile.tempPath as? String ?? ""
                     playerVC._passwordStr = gemFile.password as? String ?? ""
                     playerVC._passwordlen = gemFile.pwLenth as? Int ?? 0
                     playerVC._gemGUID = gemFile.gemGUID as? String ?? ""
-                    playerVC._nCheckTimeUseNetTime = gemFile.nCheckTimeUseNetTime as? Int ?? 0
+                    playerVC._nCheckSeekTimeDisable = gemFile.nplaySeekDisable as? Int ?? 0;
                     let haspassword = gemFile.pwLenth as? Int ?? 0 > 0
                     if !haspassword {
-                        playerVC._playCount = Int((playCfg?.noPwCellCfg.nPlayCount)!)
-                        playerVC._maxCount = 0
                         playerVC._nPlayTime = Int((playCfg?.noPwCellCfg.nPlayTime)!)
                     } else {
-                        playerVC._playCount = gemFile.nMaxNum as? Int ?? 0
-                        playerVC._maxCount = gemFile.nMaxNum as? Int ?? 0
                         playerVC._nPlayTime = gemFile.nMaxPlayTime as? Int ?? 0
                     }
                     if nFileType >= NDF_FILE_MP3.rawValue && nFileType < NDF_FILE_MP4.rawValue {

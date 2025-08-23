@@ -37,7 +37,8 @@ class GemFileInfo : NSObject {
     @objc public var nMaxNum : NSNumber? = 0
     @objc public var nCheckTimeUseNetTime : NSNumber? = 0
     @objc public var playPageCount : NSNumber? = 0//pdf最大预览页数
-
+    @objc public var nplaySeekDisable : NSNumber? = 0;
+    @objc public var szLicence : NSString?//文件的licence
     //水印相关
     @objc public var waterText : NSString?
     @objc public var waterFont : UIFont?

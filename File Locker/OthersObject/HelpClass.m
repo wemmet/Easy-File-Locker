@@ -124,6 +124,129 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     
     return TRUE;
 }
+
+@interface HTTPTimeFetcher : NSObject
++ (NSDate *)getHttpServerTimeSync:(NSString *)urlString error:(NSError **)error;
+@end
+
+@implementation HTTPTimeFetcher
++ (NSDate *)getHttpServerTimeSync:(NSString *)urlString error:(NSError **)error {
+    // 验证参数
+    if (!urlString || urlString.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"HTTPTimeError"
+                                        code:-100
+                                    userInfo:@{NSLocalizedDescriptionKey:@"URL不能为空"}];
+        }
+        return nil;
+    }
+    
+    // 补全协议头（默认https）
+    if (![urlString hasPrefix:@"http://"] && ![urlString hasPrefix:@"https://"]) {
+        urlString = [NSString stringWithFormat:@"https://%@", urlString];
+    }
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"HTTPTimeError"
+                                        code:-101
+                                    userInfo:@{NSLocalizedDescriptionKey:@"无效的URL格式"}];
+        }
+        return nil;
+    }
+    
+    // 创建请求（HEAD方法，仅获取响应头）
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"HEAD";
+    request.timeoutInterval = 10; // 10秒超时
+    
+    // 使用信号量实现同步等待
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block NSDate *resultDate = nil;
+    __block NSError *requestError = nil;
+    
+    // 发起异步请求，但通过信号量阻塞当前线程
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+                                                                     completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            requestError = error;
+            dispatch_semaphore_signal(semaphore);
+            return;
+        }
+        
+        // 验证HTTP响应
+        if (![response isKindOfClass:[NSHTTPURLResponse class]]) {
+            requestError = [NSError errorWithDomain:@"HTTPTimeError"
+                                              code:-102
+                                          userInfo:@{NSLocalizedDescriptionKey:@"非HTTP响应"}];
+            dispatch_semaphore_signal(semaphore);
+            return;
+        }
+        
+        NSHTTPURLResponse *httpResp = (NSHTTPURLResponse *)response;
+        
+        // 提取Date头
+        NSString *dateString = httpResp.allHeaderFields[@"Date"];
+        if (!dateString) {
+            requestError = [NSError errorWithDomain:@"HTTPTimeError"
+                                              code:-103
+                                          userInfo:@{NSLocalizedDescriptionKey:@"响应头中没有Date字段"}];
+            dispatch_semaphore_signal(semaphore);
+            return;
+        }
+        
+        // 解析Date字符串
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"GMT"];
+        formatter.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss zzz";
+        
+        NSDate *serverDate = [formatter dateFromString:dateString];
+        if (!serverDate) {
+            // 兼容备选格式
+            formatter.dateFormat = @"EEEE, dd-MMM-yy HH:mm:ss zzz";
+            serverDate = [formatter dateFromString:dateString];
+        }
+        
+        if (!serverDate) {
+            requestError = [NSError errorWithDomain:@"HTTPTimeError"
+                                              code:-104
+                                          userInfo:@{NSLocalizedDescriptionKey:[NSString stringWithFormat:@"无法解析时间字符串: %@", dateString]}];
+        } else {
+            resultDate = serverDate;
+        }
+        
+        dispatch_semaphore_signal(semaphore);
+    }];
+    
+    [task resume];
+    
+    // 阻塞当前线程，等待请求完成（超时后自动唤醒）
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)));
+    
+    // 处理超时情况
+    if (!resultDate && !requestError) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"HTTPTimeError"
+                                        code:-105
+                                    userInfo:@{NSLocalizedDescriptionKey:@"请求超时"}];
+        }
+        return nil;
+    }
+    
+    // 传递错误信息
+    if (error && requestError) {
+        *error = requestError;
+    }
+    
+    return resultDate;
+}
+
+
+@end
+
+
 @interface HelpClass()<NSURLSessionDelegate>{
     VIDEO_PLAYER_CONFIG _playCfg;
     DRM_USB_COPY_CONFIG _gcpPlayCfg;
@@ -244,7 +367,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                 }
                 return;
             }
-
+            
             nReadedSize += nReadSize;
             if (nReadSize < dwBlockSize)
                 break;
@@ -333,11 +456,11 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         //保存数据进行查看
         NSString *str = [kDocumentsDir stringByAppendingPathComponent:[NSString stringWithFormat:@"Paid_pdf%d.bmp",m]];
         SaveBmp(bitmapinfo.Buffer,bitmapinfo.Width,bitmapinfo.Height,32, [str UTF8String]);
-
+        
         NSLog(@"line:%d",__LINE__);
         NSData *dat = [NSData dataWithContentsOfFile:str];
         image = [[UIImage alloc] initWithData:dat];
-
+        
         UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, image.size.width, image.size.height)];
         UIImageView *sourceView = [UIImageView new];
         sourceView.contentMode = UIViewContentModeScaleAspectFit;
@@ -351,10 +474,10 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         [view.layer renderInContext:UIGraphicsGetCurrentContext()];
         image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
-
+        
         NSError *error = nil;
         [[NSFileManager defaultManager] removeItemAtPath:str error:&error];
-
+        
         dat = nil;
         NSLog(@"line:%d",__LINE__);
     }
@@ -406,9 +529,9 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     [self readPdfForIndex:pageIndex pdfIumObj:pdfIumObj ptSize:&ptSize ret:&_pdfRet width:width completed:completed];
 }
 
-- (void)canOpenGcpFile:(NSString *)code 
+- (void)canOpenGcpFile:(NSString *)code
                      d:(DWORD *)d
-              fileGuid:(NSString *)fileGuid 
+              fileGuid:(NSString *)fileGuid
             gemPasword:(NSString *)gemPasword
                gemPath:(NSString *)gemPath
                   hobj:(HNdfObject)hobj
@@ -505,7 +628,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         NSLog(@" func :%s line:%d error:%d",__func__,__LINE__,*d);
         return;
     }
-
+    
     NSMutableDictionary *info = nil;
     NSString *resultPath = nil;
     
@@ -532,7 +655,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             }
         }
     }
-        
+    
     NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
     NSString * szLicence = @"";
     
@@ -629,11 +752,11 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     int access = 0;
     char* szKanFile = (utf8*)[gemPath UTF8String];
     access = O_RDONLY;
-    #ifdef O_BINARY
+#ifdef O_BINARY
     access |= O_BINARY;
-    #endif
+#endif
     fNDF = open(szKanFile,access, 0666);
-      
+    
     if(fNDF != -1){
         close(fNDF);
     }
@@ -652,10 +775,10 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             imageVC._sourceImage = image;
             imageVC._gem_hobj = nil;
             imageVC._tempPath = nil;
-//            imageVC._selectIndex = 0;
-//            imageVC._isPDF = YES;
-//            imageVC._pdfCount = count;
-//            imageVC._isHostAppRun = YES;
+            //            imageVC._selectIndex = 0;
+            //            imageVC._isPDF = YES;
+            //            imageVC._pdfCount = count;
+            //            imageVC._isHostAppRun = YES;
             if (supperVC != nil) {
                 [supperVC presentViewController:imageVC animated:true completion:nil];
             }
@@ -694,7 +817,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         [SVProgressHUD dismiss];
         ImagePrewViewController *image = [[ImagePrewViewController alloc] init];
         NSData *data = [NSData dataWithContentsOfURL:[NSURL fileURLWithPath:gemPath]];
-//        image.isHostAppRun = YES;
+        //        image.isHostAppRun = YES;
         image._sourceImage = [UIImage imageWithData:data];
         if (supperVC != nil) {
             [supperVC presentViewController:image animated:true completion:nil];
@@ -757,7 +880,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             }
         }else{
             if(szSN.length > 0 && szBlackListGetUrl.length > 0){
-               NSString *result = [NSString stringWithContentsOfURL:[NSURL URLWithString:szBlackListGetUrl] encoding:NSUTF8StringEncoding error:nil];
+                NSString *result = [NSString stringWithContentsOfURL:[NSURL URLWithString:szBlackListGetUrl] encoding:NSUTF8StringEncoding error:nil];
                 if(result){
                     if(![result containsString:szSN]){
                         _gcpPlayCfg_disablePlay = YES;
@@ -826,7 +949,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                             return;
                         }
                     }
-
+                    
                     if(szSN.length > 0){
                         Reachability *lexiu = [Reachability reachabilityForInternetConnection];
                         if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
@@ -918,7 +1041,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                 char szMachineCode[LEN_NDF_DES] = {0};
                 d = GetMachineCode(bself->_playCfg.dwCPFileType, bself->_playCfg.dwMachineCodeStatus, szMachineCode);
                 NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
-
+                
                 [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:passwordText questions:nil guid:fileGuid supperVC:supperVC];
                 [SVProgressHUD dismiss];
             }];
@@ -935,7 +1058,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         return;
     }
     else if([extension isEqualToString:@"gem"]){
-
+        
         NSString *szSN = [NSString stringWithUTF8String:_playCfg.szSN];
         if(szSN.length > 0){
             Reachability *lexiu = [Reachability reachabilityForInternetConnection];
@@ -988,23 +1111,30 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
 }
 
 - (UIViewController *)DecodeLicenceCode:(HNdfObject)hobj
-                  machine:(NSString *)machine
-                  licence:(NSString *)szLicence
-                     path:(NSString *)gemPath
-             passwordText:(NSString *)passwordText
-                questions:(NSMutableArray *)questionParams
-                     guid:(NSString *)guid
-                 supperVC:(UIViewController *)supperVC
+                                machine:(NSString *)machine
+                                licence:(NSString *)szLicence
+                                   path:(NSString *)gemPath
+                           passwordText:(NSString *)passwordText
+                              questions:(NSMutableArray *)questionParams
+                                   guid:(NSString *)guid
+                               supperVC:(UIViewController *)supperVC
 {
     DWORD d = 0;
-    char machineCode[LEN_NDF_DES]   = {0};
-    char szPw[LEN_USER_PASSWORD]    = {0};
+    //    char machineCode[LEN_NDF_DES]   = {0};
+    //    char szPw[LEN_USER_PASSWORD]    = {0};
+    //    char szWaterMark[LEN_NDF_DES]   = {0};
+    //    char szTimeout[LEN_NDF_DES]     = {0};
+    NSString *machineCodeStr = @"";
+    NSString *szPwStr = @"";
+    NSString *szWaterMarkStr = @"";
+    NSString *szTimeoutStr = @"";
     int nCheckTimeUseNetTime = 0;
-    char szWaterMark[LEN_NDF_DES]   = {0};
     int nMaxNum = 0;
-    char szTimeout[LEN_NDF_DES]     = {0};
     int nMaxTime = 0;
-   
+    
+    int nMaxPreviewPageCount = 0;
+    int nplaySeekDisable = 0;
+    
     NSString *waterText = nil;
     UIFont *waterFont = nil;
     UIColor *waterColor = nil;
@@ -1021,7 +1151,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             
             if(szBlackListGetUrl && szBlackListGetUrl.length > 0)
             {
-    
+                
                 {
                     Reachability *lexiu = [Reachability reachabilityForInternetConnection];
                     if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
@@ -1032,31 +1162,58 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                 }
                 
                 NSArray *resultlist = [HelpClass downloadMacheJSON:szBlackListGetUrl];
-                 if(resultlist && [resultlist containsObject:szLicenceCheck]){
-                     _gcpPlayCfg_disablePlay = YES;
-                     [SVProgressHUD dismiss];
-                     [UIWindow showTips:NSLocalizedString(@"DisablePlayMessage", nil)];
-                     return nil;
-                 }
+                if(resultlist && [resultlist containsObject:szLicenceCheck]){
+                    _gcpPlayCfg_disablePlay = YES;
+                    [SVProgressHUD dismiss];
+                    [UIWindow showTips:NSLocalizedString(@"DisablePlayMessage", nil)];
+                    return nil;
+                }
             }
             
-            d = DecodeLicenceCode2((char *)[szLicenceCheck UTF8String], machineCode, szPw, szWaterMark, szTimeout, &nMaxNum, &nMaxTime,&nCheckTimeUseNetTime);
-            if(d>0)
+            //d = DecodeLicenceCode2((char *)[szLicenceCheck UTF8String], machineCode, szPw, szWaterMark, szTimeout, &nMaxNum, &nMaxTime,&nCheckTimeUseNetTime);
+            
+            char szParamJson[1024] = {0};
+            d = DecodeLicenceCode4((char *)[szLicence UTF8String], szParamJson);
+            if(d != 0)
             {
                 NSLog(@" func :%s line:%d error:%d",__func__,__LINE__,d);
                 [SVProgressHUD dismiss];
                 [UIWindow showTips:NSLocalizedString(@"strErrorPlayPW", nil)];
                 return nil;
             }
-            
-            if(![machine isEqualToString:[NSString stringWithUTF8String:machineCode]])
+            else{
+                NSLog(@"解码成功！");
+                // 将 C 字符串转回 NSString 处理
+                NSString *jsonResult = [NSString stringWithUTF8String:szParamJson];
+                NSDictionary *setsInfo =  [self jsonToDict:jsonResult];
+                NSLog(@"解析得到的 JSON 参数：%@", setsInfo);
+                machineCodeStr = setsInfo[@"param0"];
+                if(setsInfo[@"param1"])
+                    szPwStr = setsInfo[@"param1"];
+                if(setsInfo[@"param2"])
+                    szWaterMarkStr = setsInfo[@"param2"];
+                if(setsInfo[@"param3"])
+                    szTimeoutStr = setsInfo[@"param3"];
+                if(setsInfo[@"param4"])
+                    nMaxNum = [setsInfo[@"param4"] intValue];
+                if(setsInfo[@"param5"])
+                    nMaxTime = [setsInfo[@"param5"] intValue];
+                if(setsInfo[@"param6"])
+                    nCheckTimeUseNetTime = [setsInfo[@"param6"] intValue];
+                if(setsInfo[@"param7"])
+                    nMaxPreviewPageCount = [setsInfo[@"param7"] intValue];
+                if(setsInfo[@"param8"])
+                    nplaySeekDisable = [setsInfo[@"param8"] intValue];
+                
+            }
+            if(![machine isEqualToString:machineCodeStr])
             {
                 [SVProgressHUD dismiss];
                 [UIWindow showTips:NSLocalizedString(@"strMachineCodeErrorPlayPW", nil)];
                 return nil;
             }
             
-            passwordText = [NSString stringWithUTF8String:szPw];
+            passwordText = szPwStr;
             if(passwordText.length == 0)
             {
                 [SVProgressHUD dismiss];
@@ -1076,8 +1233,8 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                 return nil;
             }
             
-            if(strlen(szWaterMark)>0){
-                waterText = [NSString stringWithUTF8String:szWaterMark];
+            if(szWaterMarkStr.length > 0){
+                waterText = szWaterMarkStr;
             }
             
             if(waterText.length>0){
@@ -1106,6 +1263,12 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
                 memcpy(password, [passwordText UTF8String],[passwordText lengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
                 passwordLength = (int)strlen((const char *)password);
             }
+        }
+        BOOL dateEnable = [HelpClass returnDateIsEnableForString:szTimeoutStr type:nCheckTimeUseNetTime];
+        if(!dateEnable){
+            [SVProgressHUD dismiss];
+            [UIWindow showTips:NSLocalizedString(@"strErrorPlayDate", nil)];
+            return nil;
         }
     }
     else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gcp"])
@@ -1144,8 +1307,8 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         waterFont = [UIFont systemFontOfSize:_user_Play_Param.nWatermarkFontSize];
         NSString *waterText = [NSString stringWithUTF8String:_user_Play_Param.szWatermark];
         
-        if(strlen(szWaterMark)>0){
-            waterText = [NSString stringWithUTF8String:szWaterMark];
+        if(szWaterMarkStr.length > 0){
+            waterText = szWaterMarkStr;
         }
         
         if(waterText && waterText.length>0)
@@ -1197,8 +1360,10 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         gemInfo.waterColor = waterColor;
         gemInfo.waterImage = waterImage;
         
+        
         if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gem"]){
             [gemInfo setplayCfgWithCfg:_playCfg];
+            gemInfo.playPageCount = @(nMaxPreviewPageCount);
         }else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gcp"]){
             [gemInfo setgcpCfgWithCfg:_gcpPlayCfg];
             [gemInfo setuserParamWithParam:_user_Play_Param];
@@ -1206,12 +1371,13 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         }else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gfx"]){
             [gemInfo setplayCfgWithCfg:_playCfg];
         }
-        
+        gemInfo.szLicence = szLicence;
         gemInfo.waterImage = waterImage;
         gemInfo.nMaxPlayTime = @(nMaxTime);
         gemInfo.nMaxNum = @(nMaxNum);
         gemInfo.nCheckTimeUseNetTime = @(nCheckTimeUseNetTime);
-        gemInfo.szTimeout = [NSString stringWithUTF8String:szTimeout];
+        gemInfo.nplaySeekDisable = @(nplaySeekDisable);
+        gemInfo.szTimeout = szTimeoutStr;
         
         if([str length] > [str rangeOfString:@"*.*"].location){
             NSString *temPath = [[str substringToIndex:[str rangeOfString:@"*.*"].location] stringByAppendingString:gemInfo.cFileName];
@@ -1240,6 +1406,29 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     }
     
 }
+- (NSDictionary *)jsonToDict:(NSString *)jsonString{
+    
+    // 3. 将NSString转为NSData（JSON解析需要二进制数据）
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    if (!jsonData) {
+        NSLog(@"字符串转NSData失败");
+        return nil;
+    }
+    
+    // 4. 解析JSON为NSDictionary
+    NSError *error = nil;
+    NSDictionary *jsonDict = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                             options:0
+                                                               error:&error];
+    
+    // 5. 处理解析结果
+    if (jsonDict && [jsonDict isKindOfClass:[NSDictionary class]] && !error) {
+        NSLog(@"JSON解析成功，字典内容：%@", jsonDict);
+    } else {
+        NSLog(@"JSON解析失败，错误：%@", error.localizedDescription);
+    }
+    return jsonDict;
+}
 + (id)downloadMacheJSON:(NSString *)url
 {
     NSString *json_string;
@@ -1247,15 +1436,15 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     NSLog(@"%@",dataURL);
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:dataURL]];
     NSData *response = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:nil];
-
+    
     json_string = [[NSString alloc] initWithData:response encoding:NSUTF8StringEncoding];
     if(!json_string){
         return nil;
     }
     NSData *jsonData = [json_string dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error;
-     id json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
-
+    id json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
+    
     return json_dict;
 }
 
@@ -1272,8 +1461,8 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
 + (NSString *)convertToJsonData:(NSDictionary *) dict {
     NSError *error;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict
-                                        options:NSJSONWritingSortedKeys
-                                        error:&error];
+                                                       options:NSJSONWritingSortedKeys
+                                                         error:&error];
     NSString *jsonString;
     if (!jsonData) {
         NSLog(@"%@",error);
@@ -1304,7 +1493,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     
     //(7)执行task发送请求上传文件
     [uploadTask resume];
-
+    
 }
 // 上传文件的请求体
 + (NSData *)bodyData:(NSString *)fileName jsonContent:(NSString *)jsonContent
@@ -1313,11 +1502,11 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     
     //01 拼接文件参数
     /*
-    --分隔符
-    Content-Disposition: form-data; name="file"; filename="Snip20161126_210.png"
-    Content-Type: image/png
-    空行
-    文件数据
+     --分隔符
+     Content-Disposition: form-data; name="file"; filename="Snip20161126_210.png"
+     Content-Type: image/png
+     空行
+     文件数据
      */
     [data appendData:[[NSString stringWithFormat:@"--%@",Kboundary] dataUsingEncoding:NSUTF8StringEncoding]];
     [data appendData:KnewLine];
@@ -1354,7 +1543,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     /*
      --分隔符--
      */
-     [data appendData:[[NSString stringWithFormat:@"--%@--",Kboundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    [data appendData:[[NSString stringWithFormat:@"--%@--",Kboundary] dataUsingEncoding:NSUTF8StringEncoding]];
     
     return data;
 }
@@ -1365,29 +1554,29 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     return [kDocumentsDir stringByAppendingPathComponent:@"GemReader.jpg"];
 }
 + (NSMutableDictionary *)readInfo:(NSString *)path section:(NSString *)sec {
- 
-//    const char *file = [path UTF8String];
-//
-//    char *sect;
-//    char *key;
-//    char value[256];
-//
-//    printf("load file %s\n\n", file);
-//    iniFileLoad(file);
-//
-//    sect = [sec UTF8String];
-//    NSMutableArray *keys = [@[@"Licence",@"BindDevID",@"SavePw"] mutableCopy];
-//    NSMutableDictionary *dic = [NSMutableDictionary new];
-//    for (NSString *itemkey in keys) {
-//        key = [itemkey UTF8String];
-//        iniGetString(sect, key, value, sizeof(value), "notfound!");
-//        printf("[%s] %s = %s\n", sect, key, value);
-//        [dic setObject:[NSString stringWithUTF8String:value] forKey:[NSString stringWithUTF8String:key]];
-//
-//
-//
-//    }
-//    iniFileFree();
+    
+    //    const char *file = [path UTF8String];
+    //
+    //    char *sect;
+    //    char *key;
+    //    char value[256];
+    //
+    //    printf("load file %s\n\n", file);
+    //    iniFileLoad(file);
+    //
+    //    sect = [sec UTF8String];
+    //    NSMutableArray *keys = [@[@"Licence",@"BindDevID",@"SavePw"] mutableCopy];
+    //    NSMutableDictionary *dic = [NSMutableDictionary new];
+    //    for (NSString *itemkey in keys) {
+    //        key = [itemkey UTF8String];
+    //        iniGetString(sect, key, value, sizeof(value), "notfound!");
+    //        printf("[%s] %s = %s\n", sect, key, value);
+    //        [dic setObject:[NSString stringWithUTF8String:value] forKey:[NSString stringWithUTF8String:key]];
+    //
+    //
+    //
+    //    }
+    //    iniFileFree();
     return nil;//dic;
 }
 
@@ -1414,11 +1603,13 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     int blue = (hex & 0xFF0000 ) >> 16 ;
     int green = (hex & 0x00FF00 ) >> 8 ;
     int red = hex & 0x0000FF ;
-   
+    
     return [ UIColor colorWithRed :red / 255.0 green :green / 255.0 blue :blue / 255.0 alpha : 1.0 ];
 }
-
 + (BOOL)returnDateIsEnableForString:(NSString *)string{
+    return [self returnDateIsEnableForString:string type:0];
+}
++ (BOOL)returnDateIsEnableForString:(NSString *)string type:(NSInteger)type{
     
     if(!string){
         return YES;
@@ -1430,11 +1621,33 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     [dateFormatter setDateFormat:@"yyyy-MM-dd"];//
     NSDate *startDate = [dateFormatter dateFromString:string];
     
-    NSDate* endDate = [NSDate date];
+    NSDate* endDate = nil;
+    NSError *error = nil;
+    Reachability *lexiu = [Reachability reachabilityForInternetConnection];
+    if([lexiu currentReachabilityStatus] != ReachabilityStatus_NotReachable){
+        if(type == 1){
+            endDate = [HTTPTimeFetcher getHttpServerTimeSync:@"www.apple.com" error:&error];
+            NSTimeInterval time = [endDate timeIntervalSinceDate:startDate];
+            if(time <= 0){
+                return YES;
+            }
+            return NO;
+        }
+        else if (type == 2){
+            endDate = [HTTPTimeFetcher getHttpServerTimeSync:@"www.apple.com" error:&error];
+            NSTimeInterval time = [endDate timeIntervalSinceDate:startDate];
+            if(time <= 0){
+                return YES;
+            }
+        }
+    }
+    
+    endDate = [NSDate date];
     NSTimeInterval time = [endDate timeIntervalSinceDate:startDate];
     if(time<0){
         return YES;
-    }else return NO;
+    }
+    return NO;
 }
 // 懒加载
 - (NSURLSession *)session {
@@ -2387,6 +2600,55 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     return kGSG_CDWebUploaderFolder;
 }
 
-
++ (UIImage *)disablePreImage{
+    CGSize imageSize = CGSizeMake(kWIDTH * [UIScreen mainScreen].scale, kHEIGHT * [UIScreen mainScreen].scale);
+    UIImage *originalImage = [UIImage imageNamed:@"imgLimite"];
+    NSString * title = NSLocalizedString(@"strErrorPlayPageCount", nil);
+    if(title.length == 0){
+        return originalImage;
+    }
+    
+    UIFont *font = [UIFont systemFontOfSize:40];
+    UIColor *color = [[UIColor redColor] colorWithAlphaComponent:1.0];
+        
+    CGSize size = [title boundingRectWithSize:CGSizeMake(imageSize.width - 40, CGFLOAT_MAX) options:(NSStringDrawingUsesLineFragmentOrigin) attributes:@{NSFontAttributeName:font} context:nil].size;
+    
+    //原始image的宽高
+    CGFloat viewWidth = imageSize.width;
+    CGFloat viewHeight = imageSize.height;
+    //为了防止图片失真，绘制区域宽高和原始图片宽高一样
+    UIGraphicsBeginImageContext(CGSizeMake(viewWidth, viewHeight));
+    CGRect rect = CGRectMake((imageSize.width - originalImage.size.width
+                              )/2.0, (imageSize.height - originalImage.size.height)/2.0 - 80, originalImage.size.width, originalImage.size.height);
+    [[UIColor whiteColor] set];
+    UIRectFill(CGRectMake(0, 0, viewWidth, viewHeight));
+    //先将原始image绘制上
+    [originalImage drawInRect:rect];
+    NSMutableParagraphStyle * paragraphstyle =[[NSMutableParagraphStyle alloc]init];
+    paragraphstyle.alignment = NSTextAlignmentCenter;
+    //文字的属性
+    NSDictionary *attr = @{
+        //设置字体大小
+        NSFontAttributeName: font,
+        //设置文字颜色
+        NSForegroundColorAttributeName :color,
+        NSParagraphStyleAttributeName:paragraphstyle,
+    };
+    NSString* mark = title;
+    NSMutableAttributedString *attrStr = [[NSMutableAttributedString alloc] initWithString:mark attributes:attr];
+    //绘制文字的宽高
+    CGFloat strWidth = size.width;
+    CGFloat strHeight = size.height;
+    [attrStr drawInRect:CGRectMake((viewWidth - strWidth)/2.0, CGRectGetMaxY(rect), strWidth, strHeight)];
+    //开始旋转上下文矩阵，绘制水印文字
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    //根据上下文制作成图片
+    UIImage *finalImg = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    CGContextRestoreGState(context);
+    originalImage = nil;
+    return finalImg;
+}
 
 @end

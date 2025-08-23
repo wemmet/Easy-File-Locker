@@ -38,7 +38,11 @@
 "strMachineCodeErrorPlayPW" = "机器码与当前文件不一致，请联系作者！";
 "strPlayPasswordErrorPW" = "请先输入播放密码";
 "strOpenFileError" = "打开文件失败";
+
 "strErrorPlayDate" = "已经超过允许的播放日期，请联系作者！";
+"strNotPlayDuration" = "已经超过允许的播放时长，请联系作者！";
+"strErrorPlayTimes" = "已经超过允许的播放次数，请联系作者！";
+"strNotPlayWithNet" = "不允许在联网状态下观看哦!   ";
 
 "strVolume" = "音量设置";
 "strSpeed" = "播放速度";
@@ -115,3 +119,5 @@
 "Files Analyzing..." = "文件分析中...";
 "File parsing in progress... Please wait." = "正在解析文件，请稍后。";
 "请稍后..." = "请稍后...";
+
+"strErrorPlayPageCount" = "嗯……很抱歉，您无权查看此页面。请与管理员联系！";

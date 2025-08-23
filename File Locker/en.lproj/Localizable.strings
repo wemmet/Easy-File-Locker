@@ -38,7 +38,11 @@
 "strMachineCodeErrorPlayPW" = "The machineCode is inconsistent with the current file, please contact the author! ";
 "strPlayPasswordErrorPW" = "Please enter play password!";
 "strOpenFileError" = "Open file failed!";
+
 "strErrorPlayDate" = "The allowed playing date has been exceeded, please contact the author!";
+"strNotPlayDuration" = "It has exceeded the allowable playback time, please contact the author!";
+"strErrorPlayTimes" = "Password has expired, please contact the author!";
+"strNotPlayWithNet" = "Please watch in the disconnected state of the internet!";
 
 "strVolume" = "Volume";
 "strSpeed" = "Speed";
@@ -121,3 +125,4 @@
 "File parsing in progress... Please wait." = "File parsing in progress... Please wait.";
 "Files Analyzing..." = "Files Analyzing...";
 "请稍后..." = "Please Wait...";
+"strErrorPlayPageCount" = "Hmmm... We're sorry, but you don't have permission to view this page.Please contact your administrator!";

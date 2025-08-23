@@ -77,6 +77,7 @@ typedef void(^Failure)(void);
 + (BOOL)OpenZip:(NSString*)zipPath  unzipto:(NSString*)_unzipto;
 + (NSString *)getDocumentsDir;
 + (NSString *)getWebUploaderFolder;
++ (UIImage *)disablePreImage;
 @end
 
 NS_ASSUME_NONNULL_END
