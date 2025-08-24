@@ -270,8 +270,11 @@ class GemFileDetailViewController: UIViewController, UITableViewDataSource, UITa
                 if let path = _path {
                     szMD5PathCode = HelpClass.getFileMD5Code(path)
                 }
-                if pathExtension == "site" || pathExtension == "zip" || pathExtension == "7z" || pathExtension == "rar" {
-//                    
+                if pathExtension == "pptext" {
+                    return
+                }
+                else if pathExtension == "site" || pathExtension == "zip" || pathExtension == "7z" || pathExtension == "rar" {
+//
                     let paths = NSSearchPathForDirectoriesInDomains(.documentationDirectory, .userDomainMask, true)
                     let folderName = pathExtension == "site" ? "site_zip" : "gem_zip"
                     let zipFolderPath = paths[0].appendingFormat("/\(folderName)/%@", szMD5PathCode)

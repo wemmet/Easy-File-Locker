@@ -1360,7 +1360,6 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         gemInfo.waterColor = waterColor;
         gemInfo.waterImage = waterImage;
         
-        
         if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gem"]){
             [gemInfo setplayCfgWithCfg:_playCfg];
             gemInfo.playPageCount = @(nMaxPreviewPageCount);
@@ -1404,7 +1403,6 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     else{
         return fileVC;
     }
-    
 }
 - (NSDictionary *)jsonToDict:(NSString *)jsonString{
     
@@ -1614,6 +1612,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     if(!string){
         return YES;
     }
+    string = [string stringByReplacingOccurrencesOfString:@" " withString:@""];
     if([string isEqualToString: @""]){
         return YES;
     }

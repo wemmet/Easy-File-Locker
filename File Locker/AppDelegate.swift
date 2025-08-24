@@ -60,7 +60,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     }
                 }
             }
-            
         } catch {
             print("Error : \(error)")
         }

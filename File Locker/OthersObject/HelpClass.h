@@ -78,6 +78,7 @@ typedef void(^Failure)(void);
 + (NSString *)getDocumentsDir;
 + (NSString *)getWebUploaderFolder;
 + (UIImage *)disablePreImage;
++ (BOOL)returnDateIsEnableForString:(NSString *)string type:(NSInteger)type;
 @end
 
 NS_ASSUME_NONNULL_END
