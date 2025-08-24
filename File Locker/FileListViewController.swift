@@ -409,6 +409,7 @@ class FileListViewController: UIViewController, UITableViewDelegate, UITableView
                         HelpClass.openpdf(withPath: url.path, width: Float(UIScreen.main.bounds.size.width * UIScreen.main.scale), pageIndex: 0) {( rotation, count, image) in
                             SVProgressHUD.dismiss()
                             let play = ImagePrewViewController()
+                            play._isPDF = true;
                             play._tempPath = url.path
                             play._sourceImage = image
                             play._selectIndex = 0
@@ -428,6 +429,7 @@ class FileListViewController: UIViewController, UITableViewDelegate, UITableView
                         if let data = try? Data(contentsOf: url) {
                             image._sourceImage = UIImage(data: data)
                         }
+                        image._isPDF = false;
                         image._isHostAppRun = true
                         image._isPDF = extensionStr == "pdf"
                         image.modalPresentationStyle = .overFullScreen

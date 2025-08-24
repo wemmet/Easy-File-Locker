@@ -577,6 +577,7 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
                 // 创建并展示视频播放器视图控制器
                 let play = ImagePrewViewController()
                 play._imageUrls = [firstUrl]
+                play._isPDF = false;
                 self.navigationController?.pushViewController(play, animated: true)
             }
             else if fileExtension == "pdf" {
@@ -585,6 +586,7 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
                     let play = ImagePrewViewController()
                     play._tempPath = firstUrl.path
                     play._sourceImage = image
+                    play._isPDF = true;
                     play._selectIndex = 0
                     play._pdfCount = Int(count)
                     play._rotation = Int(rotation)
