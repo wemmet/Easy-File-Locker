@@ -33,7 +33,8 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     func kanPlayerDelegateStop(_ KanPlayer: Any!) {
         //print("kanPlayerDelegateStop")
     }
-    
+    var screenRecordingObserver : Any? = nil
+    var screenshotObserver : Any? = nil
     var playerBarView : UIView!
     var _isGemFile : Bool?
     var _isHostAppRun : Bool?
@@ -70,6 +71,7 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     
     private var isDraggle: Bool = false
     // 视频播放器
+    var _firstLayer : CALayer? = nil
     var _playerBgView : UITextField!
     var _kplayer: KanPlayer?
     var _playerRect : CGRect? = nil
@@ -345,7 +347,6 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     
     @objc func appWillResignActiveNotification() {
         if (_kplayer != nil) {
-            
             _currentTime = _kplayer!.currentTime
             self.configforPath(currentTime: Float(CMTimeGetSeconds(_currentTime)), duration: Float(CMTimeGetSeconds(_kplayer!.duration)))
             //[self configforPath:CMTimeGetSeconds(_currentTime) duration:CMTimeGetSeconds(_rdPlayer.duration)];
@@ -358,8 +359,8 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
             _kplayer?.view.layer .removeFromSuperlayer()
             _kplayer?.view.removeFromSuperview()
             _kplayer = nil
-            _playerBgView .removeFromSuperview()
-            _playerBgView = nil
+//            _playerBgView .removeFromSuperview()
+//            _playerBgView = nil
             removeTimer()
         }
     }
@@ -385,12 +386,24 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         self.view.bringSubviewToFront(self.playerBarView)
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // 正确设置窗口安全属性（iOS 10+）
+        if #available(iOS 10.0, *) {
+            self.view.window?.setValue(true, forKey: "secure")
+        } else {
+            // iOS 10以下无代码设置方式，可提示不支持
+            print("当前系统版本不支持防截屏功能")
+        }
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         NotificationCenter.default.addObserver(self, selector: #selector(appWillResignActiveNotification), name: UIApplication.willResignActiveNotification, object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActiveNotification), name: UIApplication.didBecomeActiveNotification, object: nil)
 
+//        self.setupScreenRecordingProtection()
+        
         view.backgroundColor = .fromRGB(0x1a1a1c)
         _speeds = self.speeds()
         _speedValue = 1.0
@@ -426,6 +439,15 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         _titleView!.addSubview(_setsButton!)
         
         
+        let playerRect : CGRect = CGRectMake(0, 0, kWIDTH, kHEIGHT);
+        _playerBgView = UITextField()
+        _playerBgView.frame = playerRect;
+        _playerBgView.isSecureTextEntry = true
+        _playerBgView.backgroundColor = .black
+        _playerBgView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(playerTapGestureRecognizer(_ : ))))
+        _playerBgView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(playerLongPressGestureRecognizer(_ : ))))
+        self.view.addSubview(_playerBgView)
+        
         setupPlayer()
         setupUI()
         if (_isVideo == false) {
@@ -445,6 +467,13 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         self.setupMenuView()
     }
     private func setupPlayer() {
+        // 正确设置窗口安全属性（iOS 10+）
+        if #available(iOS 10.0, *) {
+            self.view.window?.setValue(true, forKey: "secure")
+        } else {
+            // iOS 10以下无代码设置方式，可提示不支持
+            print("当前系统版本不支持防截屏功能")
+        }
         guard _playerPath != nil else { return }
         var PlayCount_Key : String? = nil
         var player_path_md5 = "";
@@ -490,14 +519,14 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
             }
         }
         
-        let playerRect : CGRect = CGRectMake(0, 0, kWIDTH, kHEIGHT);
-        _playerBgView = UITextField()
-        _playerBgView.frame = playerRect;
-        _playerBgView.isSecureTextEntry = true
-        _playerBgView.backgroundColor = .black
-        _playerBgView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(playerTapGestureRecognizer(_ : ))))
-        _playerBgView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(playerLongPressGestureRecognizer(_ : ))))
-        self.view.addSubview(_playerBgView)
+//        let playerRect : CGRect = CGRectMake(0, 0, kWIDTH, kHEIGHT);
+//        _playerBgView = UITextField()
+//        _playerBgView.frame = playerRect;
+//        _playerBgView.isSecureTextEntry = true
+//        _playerBgView.backgroundColor = .black
+//        _playerBgView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(playerTapGestureRecognizer(_ : ))))
+//        _playerBgView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(playerLongPressGestureRecognizer(_ : ))))
+//        self.view.addSubview(_playerBgView)
         
         var pw = [UInt8](repeating: 0, count: 1024)
         if let gemPath = _gemPath, gemPath.count > 0 {
@@ -512,16 +541,16 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
                 }
                 pw.withUnsafeMutableBufferPointer { bufferPointer in
                     if let pointer = bufferPointer.baseAddress {
-                        _kplayer = KanPlayer(kan: gemPath, pw: pointer, nPwLen: Int32(passwordStr.count), szFilePath: _playerPath!, frame: playerRect)
+                        _kplayer = KanPlayer(kan: gemPath, pw: pointer, nPwLen: Int32(passwordStr.count), szFilePath: _playerPath!, frame: _playerBgView.bounds)
                     }
                 }
             }
             else{
-                _kplayer = KanPlayer(kan: gemPath, pw: nil, nPwLen: 0, szFilePath: _playerPath!, frame: playerRect)
+                _kplayer = KanPlayer(kan: gemPath, pw: nil, nPwLen: 0, szFilePath: _playerPath!, frame: _playerBgView.bounds)
             }
         }
         else{
-            _kplayer = KanPlayer(string: _playerPath!, frame: playerRect)
+            _kplayer = KanPlayer(string: _playerPath!, frame: _playerBgView.bounds)
         }
         if(_kplayer == nil){
             NSLog("初始化播放器句柄失败");
@@ -606,19 +635,20 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
                 }
             }
         }
-        let layer = _playerBgView.layer
-        let sublayers = layer.sublayers
-        let firstLayer = sublayers?.first
-        (firstLayer! as CALayer).addSublayer((_kplayer?.view)!.layer)
-        
+       
         
         _kplayer?.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(playerTapGestureRecognizer(_ : ))))
         _kplayer?.view.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(playerLongPressGestureRecognizer(_ : ))))
         
-//        //延迟0.5秒后添加
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [self] in
-//            
-//        }
+        let layer = _playerBgView.layer
+        let sublayers = layer.sublayers
+        let firstLayer = sublayers?.first
+        if _firstLayer == nil {
+            _firstLayer = firstLayer
+        }
+        (_firstLayer! as CALayer).addSublayer((_kplayer?.view)!.layer)
+        
+        
         //视频水印
         if let waterImage = _waterImage, _isVideo == true {
             let width = Double(_kplayer!.view.bounds.size.width)
@@ -730,7 +760,14 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     }
     
     func updateProgress(){
-        
+//        let isCapturing = UIScreen.main.isCaptured
+//        if isCapturing {
+//            if(_isPlaying){
+//                playPauseTapped()
+//            }
+//            print("设备正在录屏或屏幕被捕获")
+//            return
+//        }
         var currentSeconds = CMTimeGetSeconds(_kplayer!.currentTime)
         var duration : Float64 = CMTimeGetSeconds(_kplayer!.duration)
         if duration.isNaN {
@@ -1323,11 +1360,20 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
 
     @objc private func playPauseTapped() {
         if _isPlaying == false {
+//            let isCapturing = UIScreen.main.isCaptured
+//            if isCapturing {
+//                UIWindow .showTips(NSLocalizedString("strNotPlayWithRecordScreen", comment: ""))
+//                print("设备正在录屏或屏幕被捕获")
+//                return
+//            }
+            
             let reachability = HelpClass.reachability()
             if reachability.currentReachabilityStatus() != .notReachable {
-                if(_playCfg!.nDisableOnLine == 1){
-                    UIWindow .showTips(NSLocalizedString("strNotPlayWithNet", comment: ""))
-                    return;
+                if _playCfg != nil{
+                    if(_playCfg!.nDisableOnLine == 1){
+                        UIWindow .showTips(NSLocalizedString("strNotPlayWithNet", comment: ""))
+                        return;
+                    }
                 }
             }
             
@@ -1405,7 +1451,7 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
     private func playVideo(at index: Int) {
         guard index < _temPaths!.count else { return }
         _playerPath = _temPaths![index]
-        
+        let wasSecure = _playerBgView.isSecureTextEntry
         //MARK: - 更换视频播放源
         if let path = _playerPath {
             let components = path.components(separatedBy: "\\")
@@ -1419,10 +1465,11 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         _kplayer?.view.removeFromSuperview()
         _kplayer = nil
         
-        _playerBgView.removeFromSuperview()
-        _playerBgView = nil
+//        _playerBgView.removeFromSuperview()
+//        _playerBgView = nil
         
         self.setupPlayer()
+        _playerBgView.isSecureTextEntry = wasSecure;
         self.setupUI()
         self.updateProgress()
         if (_isVideo == false) {

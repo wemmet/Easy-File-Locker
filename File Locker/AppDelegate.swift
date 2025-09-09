@@ -18,7 +18,8 @@
 ///************⑤ 增加允许最大播放次数限制
 ///************⑥ 增加PDF最大预览次数限制
 ///************⑦ 增加最大允许观看时长限制
-
+///1.0.3
+///************①修复放录屏截屏
 
 import UIKit
 let kDocumentsFolder = "\(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last!.path)/Documents"

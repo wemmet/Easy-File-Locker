@@ -126,3 +126,5 @@
 "Files Analyzing..." = "Files Analyzing...";
 "请稍后..." = "Please Wait...";
 "strErrorPlayPageCount" = "Hmmm... We're sorry, but you don't have permission to view this page.Please contact your administrator!";
+
+"strNotPlayWithRecordScreen" = "Playback is prohibited during screen recording  ";

@@ -61,6 +61,7 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
     var _scrollView: UIScrollView!
     var _imageView: UIImageView!
     var _imageBgView : UITextField!
+    var _imageBgViewFirst : UIView!
     var _rotateButton : UIButton!
     var _backButton : UIButton!
     var _titleLabel : UILabel!
@@ -88,6 +89,7 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
         self.view.backgroundColor = .black
         _titleLabel = UILabel()
         setupButton()
+        
         setupScrollView()
         if(_isPDF == true){
             self.setupPdfToolBarView()
@@ -174,12 +176,14 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
         _scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         self.view.insertSubview(_scrollView, at: 0)
         
-        _imageBgView = UITextField()
+        if _imageBgView == nil {
+            _imageBgView = UITextField()
+            _imageBgView.isSecureTextEntry = true
+            _imageBgView.backgroundColor = .black
+            _imageBgView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapGestureRecognizer(_ : ))))
+            _imageBgView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(longPressGestureRecognizer(_ : ))))
+        }
         _imageBgView.frame = _scrollView.bounds;
-        _imageBgView.isSecureTextEntry = true
-        _imageBgView.backgroundColor = .black
-        _imageBgView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapGestureRecognizer(_ : ))))
-        _imageBgView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(longPressGestureRecognizer(_ : ))))
         _scrollView.addSubview(_imageBgView)
         
         _imageView = UIImageView(frame: _imageBgView.bounds)
@@ -225,8 +229,10 @@ class ImagePrewViewController: UIViewController,UITextFieldDelegate, UIScrollVie
             }
         }
         
-        
-        (_imageBgView.subviews.first)!.addSubview(_imageView!)
+        if _imageBgViewFirst == nil {
+            _imageBgViewFirst = (_imageBgView.subviews.first)!
+        }
+        _imageBgViewFirst.addSubview(_imageView!)
         _scrollView.addSubview(_imageBgView)
         _scrollView.contentSize = _imageBgView.bounds.size
     }
