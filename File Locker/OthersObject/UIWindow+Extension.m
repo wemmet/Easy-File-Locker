@@ -27,7 +27,7 @@
     [string addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, string.length)];
     CGRect rect = [string boundingRectWithSize:CGSizeMake(maxWidth, 10000) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
     CGSize size = CGSizeMake(ceilf(rect.size.width), ceilf(rect.size.height < maxHeight ? rect.size.height : maxHeight));
-    
+    size.width += 40;
     CGRect textFrame = CGRectMake(window.frame.size.width/2 - (size.width + commonInset * 2)/2 , window.frame.size.height - (size.height + commonInset * 2) - 100, size.width  + commonInset * 3, size.height + commonInset * 2);
     tips = [[UITextView alloc] initWithFrame:textFrame];
     tips.text = text;

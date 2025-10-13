@@ -20,6 +20,8 @@
 ///************⑦ 增加最大允许观看时长限制
 ///1.0.3
 ///************①修复放录屏截屏
+///1.1.0
+///************①更新libCPPlayer.a
 
 import UIKit
 let kDocumentsFolder = "\(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last!.path)/Documents"
