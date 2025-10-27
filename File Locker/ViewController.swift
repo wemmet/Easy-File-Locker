@@ -34,6 +34,13 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
     var _fileName : String! = ""
     var _isEncryptFinished : Bool = false
     var _isEncryptFaile : Bool = false
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+//        let values = [2,3,4,5];
+//        let first = values[5];
+//        print(first)
+        
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         self.view.backgroundColor = .fromRGB(0x1a1a1c)

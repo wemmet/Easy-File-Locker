@@ -22,8 +22,12 @@
 ///************①修复放录屏截屏
 ///1.1.0
 ///************①更新libCPPlayer.a
+///
+///1.1.1
+///************①修复查看pdf时内存泄露的问题。
 
 import UIKit
+import Bugly
 let kDocumentsFolder = "\(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last!.path)/Documents"
 let kHEIGHT : CGFloat =  UIScreen.main.bounds.size.height
 let kWIDTH : CGFloat = UIScreen.main.bounds.size.width
@@ -66,6 +70,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } catch {
             print("Error : \(error)")
         }
+        Bugly.start(withAppId: "a4a9fb6c2b");
         // Override point for customization after application launch.
         return true
     }

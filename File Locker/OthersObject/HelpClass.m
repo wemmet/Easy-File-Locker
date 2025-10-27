@@ -315,7 +315,8 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     }
     int64_t nSize = 0;
     if([HelpClass shared].pdfBuff){
-        //NDF_Free_Buff(_pdfBuff);
+        NDF_Free_Buff(_pdfBuff);
+        [HelpClass shared].pdfBuff = nil;
     }
     [HelpClass shared].pdfBuff = 0;
     DWORD ret = NDF_ReadFile(gem_hobj, [HelpClass shared].hFile, nil, &nSize);
@@ -326,6 +327,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         NDF_CloseFile(gem_hobj,[HelpClass shared].hFile);
         NDF_Free_Buff([HelpClass shared].pdfBuff);
         NDF_Close(gem_hobj);
+        [HelpClass shared].pdfBuff = nil;
         if(completed){
             completed(0,[HelpClass shared].pdfCount,nil);
         }
@@ -342,6 +344,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             NDF_Free_Buff([HelpClass shared].pdfBuff);
             NDF_CloseFile(gem_hobj,[HelpClass shared].hFile);
             //NDF_Close(gem_hobj);
+            [HelpClass shared].pdfBuff = nil;
             if(completed){
                 completed(0,[HelpClass shared].pdfCount,nil);
             }
@@ -362,6 +365,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             {
                 NSLog(@"NDF_ReadFile error:%d",ret);
                 NDF_Free_Buff([HelpClass shared].pdfBuff);
+                [HelpClass shared].pdfBuff = nil;
                 if(completed){
                     completed(0,[HelpClass shared].pdfCount,nil);
                 }
@@ -386,6 +390,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         NDF_Free_Buff([HelpClass shared].pdfBuff);
         NDF_CloseFile(gem_hobj,[HelpClass shared].hFile);
         NDF_Close(gem_hobj);
+        [HelpClass shared].pdfBuff = nil;
         if(completed){
             completed(0,[HelpClass shared].pdfCount,nil);
         }

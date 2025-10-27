@@ -619,13 +619,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-File Locker/Pods-File Locker-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-File Locker/Pods-File Locker-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -900,7 +896,7 @@
 					"$(PROJECT_DIR)/File\\ Locker/OthersObject/SDK",
 					"$(PROJECT_DIR)/File\\ Locker/OthersObject/PDF/pdfium-ios-release/lib",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hmh.filelocker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -946,7 +942,7 @@
 					"$(PROJECT_DIR)/File\\ Locker/OthersObject/SDK",
 					"$(PROJECT_DIR)/File\\ Locker/OthersObject/PDF/pdfium-ios-release/lib",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hmh.filelocker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
