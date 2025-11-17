@@ -25,7 +25,10 @@
 ///
 ///1.1.1
 ///************①修复查看pdf时内存泄露的问题。
-
+///
+///1.1.2
+///************①更新libCPPlayer.a
+///
 import UIKit
 import Bugly
 let kDocumentsFolder = "\(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last!.path)/Documents"
