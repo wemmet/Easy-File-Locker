@@ -61,7 +61,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             if (fileList != nil){
                 for i in 0 ..< fileList.count {
                     if let pathExtension = (fileList[i] as? NSString)?.pathExtension.lowercased(){
-                        if pathExtension.count > 0 ,((pathExtension != "gem") && (pathExtension != "gfx") && (pathExtension != "gcp")) {
+                        // 使用NDF_GetDrmFileType替代扩展名检查
+                        let fileType = NDF_GetDrmFileType(fileList[i] as! String)
+                        // 直接使用枚举值进行比较，Swift会自动处理C枚举到Int32的转换
+                        if pathExtension.count > 0 ,(fileType != 1 && fileType != 3 && fileType != 2) {
                             if let fileName = (fileList[i] as? NSString)?.lastPathComponent {
                                 var itemFilePath : String = documentsPath + "/" + fileName
                                 try? fileManager.removeItem(atPath: itemFilePath)

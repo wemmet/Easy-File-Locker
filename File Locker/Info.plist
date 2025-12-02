@@ -7,6 +7,34 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
+				<string>*</string>
+			</array>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>*/*</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>All Files</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.content</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.database</string>
+				<string>public.executable</string>
+				<string>public.text</string>
+				<string>public.image</string>
+				<string>public.audiovisual-content</string>
+				<string>public.zip-archive</string>
+				<string>public.composite-content</string>
+				<string>public.disk-image</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
 				<string>gem</string>
 			</array>
 			<key>CFBundleTypeName</key>
@@ -44,6 +72,20 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.gilisoft.gcp</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>abc</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>My Abc File</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.gilisoft.abc</string>
 			</array>
 		</dict>
 	</array>
@@ -121,6 +163,23 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>gcp</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>com.gilisoft.abc</string>
+			<key>UTTypeDescription</key>
+			<string>My abc File</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>abc</string>
 				</array>
 			</dict>
 		</dict>

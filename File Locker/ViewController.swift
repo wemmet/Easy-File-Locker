@@ -548,7 +548,8 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
 
     //MARK: 显示文档选择器的方法
     @objc func showDocumentPicker() {
-        let documentTypes: [String] = ["com.gilisoft.gem","com.gilisoft.gfx","com.gilisoft.gcp","com.adobe.pdf", "public.jpeg", "public.png", "public.mpeg-4", "public.movie"]
+        //let documentTypes: [String] = ["com.gilisoft.gem","com.gilisoft.gfx","com.gilisoft.gcp","com.adobe.pdf", "public.jpeg", "public.png", "public.mpeg-4", "public.movie","com.gilisoft.abc"]
+        let documentTypes: [String] = ["public.content", "public.data", "public.item", "*"]
         // 创建并显示文档选择器视图控制器
         let documentPicker = UIDocumentPickerViewController(documentTypes: documentTypes, in: .open)
         documentPicker.delegate = self  // 确保你已经遵循了 UIDocumentPickerDelegate 协议
@@ -563,11 +564,12 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
         print("选中的文件 URL: \(firstUrl)")
         // 获取持久访问权限
         if firstUrl.startAccessingSecurityScopedResource() {
-            // 获取文件扩展名并转换为小写
+            // 使用NDF_GetDrmFileType替代扩展名检查
+            let fileType = NDF_GetDrmFileType(firstUrl.path)
             let fileExtension = firstUrl.pathExtension.lowercased()
-            // 判断文件扩展名并进行相应处理
-            if (fileExtension == "gem") || (fileExtension == "gfx") || (fileExtension == "gcp") {
-                print("处理 .\(fileExtension) 文件")
+            // 判断文件类型并进行相应处理
+            if fileType == 1 || fileType == 2 || fileType == 3 {
+                print("处理受保护文件")
                 SVProgressHUD.setDefaultStyle(SVProgressHUDStyle.dark)
                 SVProgressHUD.setDefaultMaskType(SVProgressHUDMaskType.black)
                 SVProgressHUD.show()
@@ -600,17 +602,10 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
                     self.navigationController?.pushViewController(play, animated: true)
                 }
             }
-            else {
-                // TODO: 处理未知文件类型，当前为空实现
-                // 例如：显示错误提示或执行默认逻辑
-                print("未知文件类型")
-                UIWindow .showTips("未知文件类型")
+            else{
+                UIWindow .showTips(NSLocalizedString("暂不支持打开此格式的文件", comment: ""))
             }
         }
-        
-        
-
-            
     }
 
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
@@ -628,8 +623,9 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
                 return
             }
             
-            let pathExtension = url.pathExtension.lowercased()
-            if pathExtension == "gem" || pathExtension == "gcp" || pathExtension == "gfx" {
+            // 使用NDF_GetDrmFileType替代扩展名检查
+            let fileType = NDF_GetDrmFileType(url.path)
+            if fileType == 1 || fileType == 2 || fileType == 3 {
                 HelpClass.shared().openGem(forPath: url.path ,supperVC: self)
             } else {
                 let extensionStr = url.pathExtension.lowercased()
@@ -670,13 +666,16 @@ class ViewController: UIViewController,UIDocumentPickerDelegate,UIImagePickerCon
                         image._isPDF = extensionStr == "pdf"
                         self.navigationController?.pushViewController(image, animated: true)
                     }
-                } else {
+                } else if extensionStr == "" {
                     SVProgressHUD.dismiss()
                     let fileVC = GemFileDetailViewController()
                     fileVC._path = url.deletingLastPathComponent().path
                     fileVC.isGem = false
                     fileVC.isHostAppRun = true
                     self.navigationController?.pushViewController(fileVC, animated: true)
+                }
+                else{
+                    UIWindow .showTips(NSLocalizedString("暂不支持打开此格式的文件", comment: ""))
                 }
             }
         }

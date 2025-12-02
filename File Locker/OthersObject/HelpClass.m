@@ -772,6 +772,294 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     }
     
     
+    int fileType = NDF_GetDrmFileType([gemPath UTF8String]);
+    if(fileType == DRM_FILE_TYPE_GEM || fileType == DRM_FILE_TYPE_GCP || fileType == DRM_FILE_TYPE_GFX){
+        __block DWORD d = 0;
+        VIDEO_PLAYER_CONFIG playCfg = {0};
+        _playCfg = playCfg;
+        d = NDF_GetPlayerConfig([gemPath UTF8String], &_playCfg);
+        if(d !=0){
+            NSLog(@"error:NDF_GetPlayerConfig errorCode:%d",d);//44957701
+            return;
+        }
+        int sGuid = 0;
+        d = NDF_GetGuid((char *)[gemPath UTF8String],NULL, &sGuid);
+        if(d !=0){
+            NSLog(@"error:NDF_GetGuid errorCode:%d",d);
+            return;
+        }
+        NSString *fileGuid = @"";
+        if(sGuid > 0){
+            char *guidCode = malloc(sGuid + 1);
+            memset(guidCode,0,sGuid + 1);
+            d = NDF_GetGuid((char *)[gemPath UTF8String],guidCode, &sGuid);
+            if(d !=0){
+                return;
+            }
+            fileGuid = [NSString stringWithCString:guidCode encoding:NSUTF8StringEncoding];
+        }
+        
+        char szMD5Code[NDF_MAX_PATH] = {0};
+        d = GetMD5Code((char *)[gemPath UTF8String], szMD5Code);
+        NSString *pathMd5Code = [NSString stringWithUTF8String:szMD5Code];
+        
+        if(fileType == DRM_FILE_TYPE_GCP || _playCfg.dwCPFileType == 4){
+            
+            __block typeof(self) bself = self;
+            __block NSString *passwordText = @"";
+            __block NSString *userNameText = @"";
+            
+            DRM_USB_COPY_CONFIG gcpCfg = {0};
+            d = NDF_GetPlayerUsbCopyConfig([gemPath UTF8String], &gcpCfg);
+            _gcpPlayCfg = gcpCfg;
+            
+            char szMachineCode[LEN_NDF_DES] = {0};
+            d = GetMachineCode(kDWCPType, kDWFlag, szMachineCode);
+            NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
+            
+            NSString *szSN = [NSString stringWithUTF8String:_gcpPlayCfg.szSN];
+            NSString *szBlackListGetUrl = [NSString stringWithUTF8String:_gcpPlayCfg.szBlackListGetUrl];
+            if(_gcpPlayCfg.nRegister == 0){
+                if(szSN.length > 0 && szBlackListGetUrl.length > 0){
+                    [SVProgressHUD dismiss];
+                    [UIWindow showTips:NSLocalizedString(@"nRegisterMessage", nil)];
+                }
+            }else{
+                if(szSN.length > 0 && szBlackListGetUrl.length > 0){
+                    NSString *result = [NSString stringWithContentsOfURL:[NSURL URLWithString:szBlackListGetUrl] encoding:NSUTF8StringEncoding error:nil];
+                    if(result){
+                        if(![result containsString:szSN]){
+                            _gcpPlayCfg_disablePlay = YES;
+                            [SVProgressHUD dismiss];
+                            [UIWindow showTips:NSLocalizedString(@"RegisterMessage", nil)];
+                            return;
+                        }
+                    }
+                }
+            }
+            DWORD hasPw = NDF_IsExistPassword([gemPath UTF8String]);
+            if(hasPw == 1){
+                [SVProgressHUD dismiss];
+                [[AlertView alloc] initWithFrame:CGRectMake(0, 0, kWIDTH, kHEIGHT) view:[UIApplication sharedApplication].keyWindow isOnlyPassword:NO completed:^(NSString * _Nonnull userNameValue, NSString * _Nonnull passwordValue) {
+                    userNameText = userNameValue;
+                    passwordText = passwordValue;
+                    int passwordLength = 0;
+                    if(userNameText.length == 0 || passwordText.length == 0){
+                        [UIWindow showTips:NSLocalizedString(@"strLogInPW", nil)];
+                        return;
+                    }
+                    [SVProgressHUD showWithStatus:NSLocalizedString(@"请稍后...", nil)];
+                    BOOL isLoginOk = NO;
+                    BOOL isAdmin = NO;
+                    if([[NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[0].szUserName] isEqualToString:userNameText] && [[NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[0].szUserPW] isEqualToString:passwordText]){
+                        isAdmin = YES;
+                    }
+                    for(int i = 0;i<3;i++){
+                        NSString *userName = [NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[i].szUserName];
+                        NSString *password = [NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[i].szUserPW];
+                        if([userName isEqualToString:userNameText] && [password isEqualToString:passwordText]){
+                            isLoginOk = YES;
+                            bself->_user_Play_Param = bself->_gcpPlayCfg.pUserParam[i];
+                            break;
+                        }
+                    }
+                    NSString *gemPasword = [NSString stringWithUTF8String:bself->_gcpPlayCfg.szGemPw];
+                    if(isLoginOk){
+                        uint8_t password[LEN_USER_PASSWORD + 1] = {0};
+                        memcpy(password, [gemPasword UTF8String],[gemPasword lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                        NSLog(@"%s",password);
+                        passwordLength = (int)strlen((const char *)password);
+                        
+                        NDF_UsbCopyLoginAdmin(isAdmin ? 1 : 0);
+                        HNdfObject hobj = NDF_Open([gemPath UTF8String], password, passwordLength);
+                        if(!hobj){
+                            [SVProgressHUD dismiss];
+                            DWORD dwErrorCode = NDF_GetLastError();
+                            if(dwErrorCode > 0)
+                                dwErrorCode = dwErrorCode & 0xFFFF;
+                            if(dwErrorCode == 0x0018)
+                            {
+                                [UIWindow showTips:NSLocalizedString(@"strProtect", nil)];
+                            }
+                            else
+                            {
+                                [UIWindow showTips:NSLocalizedString(@"DisablePlayMessage", nil)];
+                            }
+                            return;
+                        }
+                        if(bself->_user_Play_Param.nDisableVirMachine){
+                            if(IsVirMache()){
+                                [SVProgressHUD dismiss];
+                                NSLog(@" func :%s line:%d error:当前文件不允许虚拟机运行",__func__,__LINE__);
+                                [UIWindow showTips:NSLocalizedString(@"DisableRunVir", nil)];
+                                return;
+                            }
+                        }
+                        
+                        if(szSN.length > 0){
+                            Reachability *lexiu = [Reachability reachabilityForInternetConnection];
+                            if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
+                                [UIWindow showTips:NSLocalizedString(@"CheckTheCurrentNetwork", nil)];
+                                return;
+                            }
+                            NSString *url = kGcpinvalidsnJson_Url;
+                            NSString *jsonpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GcpinvalidsnJson.json"];
+                            NSString *resultpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"Result_GcpinvalidsnJson.json"];
+                            
+                            [[NSFileManager defaultManager] removeItemAtPath:jsonpath error:nil];
+                            [[NSFileManager defaultManager] removeItemAtPath:resultpath error:nil];
+                            DownTool *tool = [[DownTool alloc] initWithURLPath:url savePath:jsonpath];
+                            
+                            tool.Finish = ^(NSString *cachePath) {
+                                FileDecrypt([cachePath UTF8String],[resultpath UTF8String]);
+                                
+                                NSString *json_string = [NSString stringWithContentsOfFile:resultpath encoding:NSUTF8StringEncoding error:nil];
+                                
+                                if(json_string){
+                                    NSData *jsonData = [json_string dataUsingEncoding:NSUTF8StringEncoding];
+                                    NSError *error;
+                                    NSDictionary * json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
+                                    NSArray *list = json_dict[@"invalidsn"];
+                                    if([list containsObject:szSN]){
+                                        _gcpPlayCfg_disablePlay = YES;
+                                        [SVProgressHUD dismiss];
+                                        [UIWindow showTips:NSLocalizedString(@"DisableFileMessage", nil)];
+                                        
+                                    }else{
+                                        [bself canOpenGcpFile:code d:&d fileGuid:fileGuid gemPasword:gemPasword gemPath:gemPath hobj:hobj supperVC:supperVC];
+                                    }
+                                }
+                                else{
+                                    [bself canOpenGcpFile:code d:&d fileGuid:fileGuid gemPasword:gemPasword gemPath:gemPath hobj:hobj supperVC:supperVC];
+                                }
+                                [SVProgressHUD dismiss];
+                            };
+                            [tool start];
+                        }
+                        else{
+                            [bself canOpenGcpFile:code d:&d fileGuid:fileGuid gemPasword:gemPasword gemPath:gemPath hobj:hobj supperVC:supperVC];
+                            [SVProgressHUD dismiss];
+                        }
+                        return;
+                    }else{
+                        [SVProgressHUD dismiss];
+                        [UIWindow showTips:NSLocalizedString(@"UserNameOrPasswordError", nil)];
+                        return;
+                    }
+                }];
+            }else{
+                HNdfObject hobj = NDF_Open([gemPath UTF8String], nil, 0);
+                [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:nil questions:nil guid:fileGuid supperVC:supperVC];
+            }
+            return;
+        }
+        else if(fileType == DRM_FILE_TYPE_GFX){
+            
+            DWORD hasPw = NDF_IsExistPassword([gemPath UTF8String]);
+            if(hasPw == 1){
+                __block typeof(self) bself = self;
+                __block NSString *passwordText = @"";
+                [SVProgressHUD dismiss];
+                [[AlertView alloc] initWithFrame:CGRectMake(0, 0, kWIDTH, kHEIGHT) view:[UIApplication sharedApplication].keyWindow isOnlyPassword:YES completed:^(NSString * _Nonnull userNameValue, NSString * _Nonnull passwordValue) {
+                    passwordText = passwordValue;
+                    int passwordLength = 0;
+                    if(passwordText.length == 0){
+                        [SVProgressHUD dismiss];
+                        return;
+                    }
+                    [SVProgressHUD showWithStatus:NSLocalizedString(@"请稍后...", nil)];
+                    uint8_t password[LEN_USER_PASSWORD + 1] = {0};
+                    memcpy(password, [passwordText UTF8String],[passwordText lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                    NSLog(@"%s",password);
+                    passwordLength = (int)strlen((const char *)password);
+                    HNdfObject hobj = NDF_Open([gemPath UTF8String], password, passwordLength);
+                    if(!hobj){
+                        [SVProgressHUD dismiss];
+                        DWORD dwErrorCode = NDF_GetLastError();
+                        if(dwErrorCode > 0)
+                            dwErrorCode = dwErrorCode & 0xFFFF;
+                        if(dwErrorCode == 0x0018)
+                        {
+                            [UIWindow showTips:NSLocalizedString(@"strProtect", nil)];
+                        }
+                        else
+                        {
+                            [UIWindow showTips:NSLocalizedString(@"PasswordError", nil)];
+                        }
+                        return;
+                    }
+                    char szMachineCode[LEN_NDF_DES] = {0};
+                    d = GetMachineCode(bself->_playCfg.dwCPFileType, bself->_playCfg.dwMachineCodeStatus, szMachineCode);
+                    NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
+                    
+                    [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:passwordText questions:nil guid:fileGuid supperVC:supperVC];
+                    [SVProgressHUD dismiss];
+                }];
+            }
+            else{
+                HNdfObject hobj = NDF_Open([gemPath UTF8String], nil, 0);
+                char szMachineCode[LEN_NDF_DES] = {0};
+                d = GetMachineCode(_playCfg.dwCPFileType, _playCfg.dwMachineCodeStatus, szMachineCode);
+                NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
+                [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:nil questions:nil guid:fileGuid supperVC:supperVC];
+                
+            }
+            
+            return;
+        }
+        else if(fileType == DRM_FILE_TYPE_GEM){
+            
+            NSString *szSN = [NSString stringWithUTF8String:_playCfg.szSN];
+            if(szSN.length > 0){
+                Reachability *lexiu = [Reachability reachabilityForInternetConnection];
+                if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
+                    [SVProgressHUD dismiss];
+                    [UIWindow showTips:NSLocalizedString(@"checkNetwork", nil)];
+                    return;
+                }
+                NSString *url = kGcpinvalidsnJson_Url;
+                NSString *jsonpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GcpinvalidsnJson.json"];
+                NSString *resultpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"Result_GcpinvalidsnJson.json"];
+                
+                [[NSFileManager defaultManager] removeItemAtPath:jsonpath error:nil];
+                [[NSFileManager defaultManager] removeItemAtPath:resultpath error:nil];
+                DownTool *tool = [[DownTool alloc] initWithURLPath:url savePath:jsonpath];
+                __block typeof(self) bself = self;
+                tool.Finish = ^(NSString *cachePath) {
+                    FileDecrypt([cachePath UTF8String],[resultpath UTF8String]);
+                    
+                    NSString *json_string = [NSString stringWithContentsOfFile:resultpath encoding:NSUTF8StringEncoding error:nil];
+                    
+                    if(json_string){
+                        NSData *jsonData = [json_string dataUsingEncoding:NSUTF8StringEncoding];
+                        NSError *error;
+                        NSDictionary * json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
+                        NSArray *list = json_dict[@"invalidsn"];
+                        if([list containsObject:szSN]){
+                            _gcpPlayCfg_disablePlay = YES;
+                            [SVProgressHUD dismiss];
+                            [UIWindow showTips:NSLocalizedString(@"DisableFileMessage", nil)];
+                        }
+                        else{
+                            [bself canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
+                        }
+                    }
+                    else{
+                        [bself canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
+                    }
+                    
+                };
+                [tool start];
+            }
+            else{
+                [self canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
+            }
+            return;
+        }
+        return;
+    }
+    
+    
     NSString *extension = [gemPath.pathExtension lowercaseString];
     if([extension isEqualToString:@"pdf"]){
         [self openpdfWithPath:gemPath width:kWIDTH *[UIScreen mainScreen].scale pageIndex:0 completed:^(int rotation, int count, UIImage *image) {
@@ -833,283 +1121,6 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         return;
     }
     
-    __block DWORD d = 0;
-    VIDEO_PLAYER_CONFIG playCfg = {0};
-    _playCfg = playCfg;
-    d = NDF_GetPlayerConfig([gemPath UTF8String], &_playCfg);
-    if(d !=0){
-        NSLog(@"error:NDF_GetPlayerConfig errorCode:%d",d);//44957701
-        return;
-    }
-    int sGuid = 0;
-    d = NDF_GetGuid((char *)[gemPath UTF8String],NULL, &sGuid);
-    if(d !=0){
-        NSLog(@"error:NDF_GetGuid errorCode:%d",d);
-        return;
-    }
-    NSString *fileGuid = @"";
-    if(sGuid > 0){
-        char *guidCode = malloc(sGuid + 1);
-        memset(guidCode,0,sGuid + 1);
-        d = NDF_GetGuid((char *)[gemPath UTF8String],guidCode, &sGuid);
-        if(d !=0){
-            return;
-        }
-        fileGuid = [NSString stringWithCString:guidCode encoding:NSUTF8StringEncoding];
-    }
-    
-    char szMD5Code[NDF_MAX_PATH] = {0};
-    d = GetMD5Code((char *)[gemPath UTF8String], szMD5Code);
-    NSString *pathMd5Code = [NSString stringWithUTF8String:szMD5Code];
-    
-    if([extension isEqualToString:@"gcp"] || _playCfg.dwCPFileType == 4){
-        
-        __block typeof(self) bself = self;
-        __block NSString *passwordText = @"";
-        __block NSString *userNameText = @"";
-        
-        DRM_USB_COPY_CONFIG gcpCfg = {0};
-        d = NDF_GetPlayerUsbCopyConfig([gemPath UTF8String], &gcpCfg);
-        _gcpPlayCfg = gcpCfg;
-        
-        char szMachineCode[LEN_NDF_DES] = {0};
-        d = GetMachineCode(kDWCPType, kDWFlag, szMachineCode);
-        NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
-        
-        NSString *szSN = [NSString stringWithUTF8String:_gcpPlayCfg.szSN];
-        NSString *szBlackListGetUrl = [NSString stringWithUTF8String:_gcpPlayCfg.szBlackListGetUrl];
-        if(_gcpPlayCfg.nRegister == 0){
-            if(szSN.length > 0 && szBlackListGetUrl.length > 0){
-                [SVProgressHUD dismiss];
-                [UIWindow showTips:NSLocalizedString(@"nRegisterMessage", nil)];
-            }
-        }else{
-            if(szSN.length > 0 && szBlackListGetUrl.length > 0){
-                NSString *result = [NSString stringWithContentsOfURL:[NSURL URLWithString:szBlackListGetUrl] encoding:NSUTF8StringEncoding error:nil];
-                if(result){
-                    if(![result containsString:szSN]){
-                        _gcpPlayCfg_disablePlay = YES;
-                        [SVProgressHUD dismiss];
-                        [UIWindow showTips:NSLocalizedString(@"RegisterMessage", nil)];
-                        return;
-                    }
-                }
-            }
-        }
-        DWORD hasPw = NDF_IsExistPassword([gemPath UTF8String]);
-        if(hasPw == 1){
-            [SVProgressHUD dismiss];
-            [[AlertView alloc] initWithFrame:CGRectMake(0, 0, kWIDTH, kHEIGHT) view:[UIApplication sharedApplication].keyWindow isOnlyPassword:NO completed:^(NSString * _Nonnull userNameValue, NSString * _Nonnull passwordValue) {
-                userNameText = userNameValue;
-                passwordText = passwordValue;
-                int passwordLength = 0;
-                if(userNameText.length == 0 || passwordText.length == 0){
-                    [UIWindow showTips:NSLocalizedString(@"strLogInPW", nil)];
-                    return;
-                }
-                [SVProgressHUD showWithStatus:NSLocalizedString(@"请稍后...", nil)];
-                BOOL isLoginOk = NO;
-                BOOL isAdmin = NO;
-                if([[NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[0].szUserName] isEqualToString:userNameText] && [[NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[0].szUserPW] isEqualToString:passwordText]){
-                    isAdmin = YES;
-                }
-                for(int i = 0;i<3;i++){
-                    NSString *userName = [NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[i].szUserName];
-                    NSString *password = [NSString stringWithUTF8String:bself->_gcpPlayCfg.pUserParam[i].szUserPW];
-                    if([userName isEqualToString:userNameText] && [password isEqualToString:passwordText]){
-                        isLoginOk = YES;
-                        bself->_user_Play_Param = bself->_gcpPlayCfg.pUserParam[i];
-                        break;
-                    }
-                }
-                NSString *gemPasword = [NSString stringWithUTF8String:bself->_gcpPlayCfg.szGemPw];
-                if(isLoginOk){
-                    uint8_t password[LEN_USER_PASSWORD + 1] = {0};
-                    memcpy(password, [gemPasword UTF8String],[gemPasword lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
-                    NSLog(@"%s",password);
-                    passwordLength = (int)strlen((const char *)password);
-                    
-                    NDF_UsbCopyLoginAdmin(isAdmin ? 1 : 0);
-                    HNdfObject hobj = NDF_Open([gemPath UTF8String], password, passwordLength);
-                    if(!hobj){
-                        [SVProgressHUD dismiss];
-                        DWORD dwErrorCode = NDF_GetLastError();
-                        if(dwErrorCode > 0)
-                            dwErrorCode = dwErrorCode & 0xFFFF;
-                        if(dwErrorCode == 0x0018)
-                        {
-                            [UIWindow showTips:NSLocalizedString(@"strProtect", nil)];
-                        }
-                        else
-                        {
-                            [UIWindow showTips:NSLocalizedString(@"DisablePlayMessage", nil)];
-                        }
-                        return;
-                    }
-                    if(bself->_user_Play_Param.nDisableVirMachine){
-                        if(IsVirMache()){
-                            [SVProgressHUD dismiss];
-                            NSLog(@" func :%s line:%d error:当前文件不允许虚拟机运行",__func__,__LINE__);
-                            [UIWindow showTips:NSLocalizedString(@"DisableRunVir", nil)];
-                            return;
-                        }
-                    }
-                    
-                    if(szSN.length > 0){
-                        Reachability *lexiu = [Reachability reachabilityForInternetConnection];
-                        if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
-                            [UIWindow showTips:NSLocalizedString(@"CheckTheCurrentNetwork", nil)];
-                            return;
-                        }
-                        NSString *url = kGcpinvalidsnJson_Url;
-                        NSString *jsonpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GcpinvalidsnJson.json"];
-                        NSString *resultpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"Result_GcpinvalidsnJson.json"];
-                        
-                        [[NSFileManager defaultManager] removeItemAtPath:jsonpath error:nil];
-                        [[NSFileManager defaultManager] removeItemAtPath:resultpath error:nil];
-                        DownTool *tool = [[DownTool alloc] initWithURLPath:url savePath:jsonpath];
-                        
-                        tool.Finish = ^(NSString *cachePath) {
-                            FileDecrypt([cachePath UTF8String],[resultpath UTF8String]);
-                            
-                            NSString *json_string = [NSString stringWithContentsOfFile:resultpath encoding:NSUTF8StringEncoding error:nil];
-                            
-                            if(json_string){
-                                NSData *jsonData = [json_string dataUsingEncoding:NSUTF8StringEncoding];
-                                NSError *error;
-                                NSDictionary * json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
-                                NSArray *list = json_dict[@"invalidsn"];
-                                if([list containsObject:szSN]){
-                                    _gcpPlayCfg_disablePlay = YES;
-                                    [SVProgressHUD dismiss];
-                                    [UIWindow showTips:NSLocalizedString(@"DisableFileMessage", nil)];
-                                    
-                                }else{
-                                    [bself canOpenGcpFile:code d:&d fileGuid:fileGuid gemPasword:gemPasword gemPath:gemPath hobj:hobj supperVC:supperVC];
-                                }
-                            }
-                            else{
-                                [bself canOpenGcpFile:code d:&d fileGuid:fileGuid gemPasword:gemPasword gemPath:gemPath hobj:hobj supperVC:supperVC];
-                            }
-                            [SVProgressHUD dismiss];
-                        };
-                        [tool start];
-                    }
-                    return;
-                }else{
-                    [SVProgressHUD dismiss];
-                    [UIWindow showTips:NSLocalizedString(@"UserNameOrPasswordError", nil)];
-                    return;
-                }
-            }];
-        }else{
-            HNdfObject hobj = NDF_Open([gemPath UTF8String], nil, 0);
-            [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:nil questions:nil guid:fileGuid supperVC:supperVC];
-        }
-        return;
-    }
-    else if([extension isEqualToString:@"gfx"]){
-        
-        DWORD hasPw = NDF_IsExistPassword([gemPath UTF8String]);
-        if(hasPw == 1){
-            __block typeof(self) bself = self;
-            __block NSString *passwordText = @"";
-            [SVProgressHUD dismiss];
-            [[AlertView alloc] initWithFrame:CGRectMake(0, 0, kWIDTH, kHEIGHT) view:[UIApplication sharedApplication].keyWindow isOnlyPassword:YES completed:^(NSString * _Nonnull userNameValue, NSString * _Nonnull passwordValue) {
-                passwordText = passwordValue;
-                int passwordLength = 0;
-                if(passwordText.length == 0){
-                    [SVProgressHUD dismiss];
-                    return;
-                }
-                [SVProgressHUD showWithStatus:NSLocalizedString(@"请稍后...", nil)];
-                uint8_t password[LEN_USER_PASSWORD + 1] = {0};
-                memcpy(password, [passwordText UTF8String],[passwordText lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
-                NSLog(@"%s",password);
-                passwordLength = (int)strlen((const char *)password);
-                HNdfObject hobj = NDF_Open([gemPath UTF8String], password, passwordLength);
-                if(!hobj){
-                    [SVProgressHUD dismiss];
-                    DWORD dwErrorCode = NDF_GetLastError();
-                    if(dwErrorCode > 0)
-                        dwErrorCode = dwErrorCode & 0xFFFF;
-                    if(dwErrorCode == 0x0018)
-                    {
-                        [UIWindow showTips:NSLocalizedString(@"strProtect", nil)];
-                    }
-                    else
-                    {
-                        [UIWindow showTips:NSLocalizedString(@"PasswordError", nil)];
-                    }
-                    return;
-                }
-                char szMachineCode[LEN_NDF_DES] = {0};
-                d = GetMachineCode(bself->_playCfg.dwCPFileType, bself->_playCfg.dwMachineCodeStatus, szMachineCode);
-                NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
-                
-                [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:passwordText questions:nil guid:fileGuid supperVC:supperVC];
-                [SVProgressHUD dismiss];
-            }];
-        }
-        else{
-            HNdfObject hobj = NDF_Open([gemPath UTF8String], nil, 0);
-            char szMachineCode[LEN_NDF_DES] = {0};
-            d = GetMachineCode(_playCfg.dwCPFileType, _playCfg.dwMachineCodeStatus, szMachineCode);
-            NSString *code = [NSString stringWithCString:szMachineCode encoding:NSUTF8StringEncoding];
-            [self DecodeLicenceCode:hobj machine:code licence:nil path:gemPath passwordText:nil questions:nil guid:fileGuid supperVC:supperVC];
-            
-        }
-        
-        return;
-    }
-    else if([extension isEqualToString:@"gem"]){
-        
-        NSString *szSN = [NSString stringWithUTF8String:_playCfg.szSN];
-        if(szSN.length > 0){
-            Reachability *lexiu = [Reachability reachabilityForInternetConnection];
-            if([lexiu currentReachabilityStatus] == ReachabilityStatus_NotReachable){
-                [SVProgressHUD dismiss];
-                [UIWindow showTips:NSLocalizedString(@"checkNetwork", nil)];
-                return;
-            }
-            NSString *url = kGcpinvalidsnJson_Url;
-            NSString *jsonpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GcpinvalidsnJson.json"];
-            NSString *resultpath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"Result_GcpinvalidsnJson.json"];
-            
-            [[NSFileManager defaultManager] removeItemAtPath:jsonpath error:nil];
-            [[NSFileManager defaultManager] removeItemAtPath:resultpath error:nil];
-            DownTool *tool = [[DownTool alloc] initWithURLPath:url savePath:jsonpath];
-            __block typeof(self) bself = self;
-            tool.Finish = ^(NSString *cachePath) {
-                FileDecrypt([cachePath UTF8String],[resultpath UTF8String]);
-                
-                NSString *json_string = [NSString stringWithContentsOfFile:resultpath encoding:NSUTF8StringEncoding error:nil];
-                
-                if(json_string){
-                    NSData *jsonData = [json_string dataUsingEncoding:NSUTF8StringEncoding];
-                    NSError *error;
-                    NSDictionary * json_dict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
-                    NSArray *list = json_dict[@"invalidsn"];
-                    if([list containsObject:szSN]){
-                        _gcpPlayCfg_disablePlay = YES;
-                        [SVProgressHUD dismiss];
-                        [UIWindow showTips:NSLocalizedString(@"DisableFileMessage", nil)];
-                    }else{
-                        [bself canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
-                    }
-                }
-                else{
-                    [bself canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
-                }
-                
-            };
-            [tool start];
-        }
-        else{
-            [self canOpenGemFile:&d fileGuid:fileGuid gemPath:gemPath supperVC:supperVC];
-        }
-        return;
-    }
     
     [UIWindow showTips:[NSString stringWithFormat:NSLocalizedString(@"strUnSupportFile", nil)]];
     
@@ -1146,7 +1157,8 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
     UIImage *waterImage = nil;
     int passwordLength = 0;
     
-    if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gem"])
+    int fileType = NDF_GetDrmFileType([gemPath UTF8String]);
+    if(fileType == DRM_FILE_TYPE_GEM)
     {
         NSString *szLicenceCheck = [szLicence stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         if(szLicenceCheck && szLicenceCheck.length>0)
@@ -1276,7 +1288,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             return nil;
         }
     }
-    else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gcp"])
+    else if(fileType == DRM_FILE_TYPE_GCP)
     {
         {
             BOOL dateEnable = [HelpClass returnDateIsEnableForString:[NSString stringWithUTF8String:_user_Play_Param.szPlayTimeOut]];
@@ -1323,7 +1335,7 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
             waterFont = [UIFont systemFontOfSize:_user_Play_Param.nWatermarkFontSize * 2];
             waterImage = [HelpClass imageWithText:waterText fontSize:_user_Play_Param.nWatermarkFontSize color:waterColor];
         }
-    }else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gfx"]){
+    }else if(fileType == DRM_FILE_TYPE_GFX){
         if(passwordText.length > 0){
             uint8_t password[LEN_USER_PASSWORD];
             memcpy(password, [passwordText UTF8String],[passwordText lengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
@@ -1365,14 +1377,14 @@ BOOL SaveBmp (uint8_t* pData, int width, int height,int bpp,char *filename)
         gemInfo.waterColor = waterColor;
         gemInfo.waterImage = waterImage;
         
-        if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gem"]){
+        if(fileType == DRM_FILE_TYPE_GEM){
             [gemInfo setplayCfgWithCfg:_playCfg];
             gemInfo.playPageCount = @(nMaxPreviewPageCount);
-        }else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gcp"]){
+        }else if(fileType == DRM_FILE_TYPE_GCP){
             [gemInfo setgcpCfgWithCfg:_gcpPlayCfg];
             [gemInfo setuserParamWithParam:_user_Play_Param];
             gemInfo.playPageCount = @(_user_Play_Param.nPlayPageCount);
-        }else if([[[gemPath pathExtension]lowercaseString] isEqualToString:@"gfx"]){
+        }else if(fileType == DRM_FILE_TYPE_GFX){
             [gemInfo setplayCfgWithCfg:_playCfg];
         }
         gemInfo.szLicence = szLicence;

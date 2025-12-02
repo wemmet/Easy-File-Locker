@@ -128,3 +128,5 @@
 "strErrorPlayPageCount" = "Hmmm... We're sorry, but you don't have permission to view this page.Please contact your administrator!";
 
 "strNotPlayWithRecordScreen" = "Playback is prohibited during screen recording  ";
+
+"暂不支持打开此格式的文件" = "This file format is temporarily not supported.";

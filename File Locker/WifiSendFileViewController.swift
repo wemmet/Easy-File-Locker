@@ -80,7 +80,8 @@ class WifiSendFileViewController: UIViewController,GCDWebUploaderDelegate {
         _webServer!.allowHiddenItems = true
         
         // 限制文件上传类型
-        _webServer!.allowedFileExtensions = ["7z","rar","zip","gcp","gfx","gem","mp3","aac","wav","mov","mp4","jpeg","tiff","pdf","gif","jpg","png"];
+        //_webServer!.allowedFileExtensions = ["7z","rar","zip","gcp","gfx","gem","mp3","aac","wav","mov","mp4","jpeg","tiff","pdf","gif","jpg","png","abc"];
+        // 不设置allowedFileExtensions属性，使用默认值即可允许所有文件扩展名
         // 设置网页标题
         _webServer!.title = NSLocalizedString("appName", comment: "")
         // 设置展示在网页上的文字(开场白)

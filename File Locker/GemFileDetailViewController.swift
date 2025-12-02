@@ -141,8 +141,9 @@ class GemFileDetailViewController: UIViewController, UITableViewDataSource, UITa
         let fileName = item.cFileName ?? ""
         let fileImage = item.fileIcon ?? UIImage()
         let url = NSURL(fileURLWithPath: _path!)
-        let pathExtension = (url.pathExtension)!.lowercased()
-        if ["gem", "gcp", "gfx"].contains(pathExtension) {
+        let fileType = NDF_GetDrmFileType(url.path)
+        // 判断文件类型并进行相应处理
+        if fileType == 1 || fileType == 2 || fileType == 3 {
             cell.fileNameLabel.text = fileName as String
             cell.fileDetailLabel.text = HelpClass.string(forAllFileSize: item.nFileSize as! UInt64)
             let tempPath = item.tempPath as? String

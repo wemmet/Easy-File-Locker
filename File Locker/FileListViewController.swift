@@ -379,14 +379,16 @@ class FileListViewController: UIViewController, UITableViewDelegate, UITableView
             let array = url.absoluteString.components(separatedBy: "/")
             let fileName = array.last?.removingPercentEncoding ?? ""
             print("--->>>>\(fileName)")
-            SVProgressHUD .show(withStatus: NSLocalizedString("请稍后...", comment: ""))
             if !FileManager.default.fileExists(atPath: url.path) {
                 return
             }
-            
-            let pathExtension = url.pathExtension.lowercased()
-            if pathExtension == "gem" || pathExtension == "gcp" || pathExtension == "gfx" {
+            SVProgressHUD .show(withStatus: NSLocalizedString("请稍后...", comment: ""))
+            // 使用NDF_GetDrmFileType替代扩展名检查
+            let fileType = NDF_GetDrmFileType(url.path)
+            // 只有当fileType为1、2、3时才作为Gem文件处理，其他情况（包括0）都进行后缀名检查
+            if fileType == 1 || fileType == 2 || fileType == 3 {
                 HelpClass.shared().openGem(forPath: url.path,supperVC: self)
+                SVProgressHUD .dismiss()
             } else {
                 let extensionStr = url.pathExtension.lowercased()
                 if ["mp3", "mp4", "mov", "wav"].contains(extensionStr) {
@@ -440,7 +442,7 @@ class FileListViewController: UIViewController, UITableViewDelegate, UITableView
                             self .present(image, animated: true, completion: nil)
                         }
                     }
-                } else {
+                } else if extensionStr == "" {
                     SVProgressHUD.dismiss()
                     let fileVC = GemFileDetailViewController()
                     fileVC._path = url.deletingLastPathComponent().path
@@ -453,6 +455,10 @@ class FileListViewController: UIViewController, UITableViewDelegate, UITableView
                     else{
                         self .present(fileVC, animated: true, completion: nil)
                     }
+                }
+                else{
+                    SVProgressHUD.dismiss()
+                    UIWindow .showTips(NSLocalizedString("暂不支持打开此格式的文件", comment: ""))
                 }
             }
         }

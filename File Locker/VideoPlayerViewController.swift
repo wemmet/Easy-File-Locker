@@ -477,15 +477,24 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
         guard _playerPath != nil else { return }
         var PlayCount_Key : String? = nil
         var player_path_md5 = "";
-        if(_playerPath != nil){
-            player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
-        }
-        if _lience != nil {
-            PlayCount_Key = _lience! as String + "_" + _md5Path! + "_" + player_path_md5 + "_PlayCount"
+        player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
+        if let md5Path = _md5Path {
+            if _lience != nil {
+                PlayCount_Key = _lience! as String + "_" + md5Path + "_" + player_path_md5 + "_PlayCount"
+            }
+            else{
+                PlayCount_Key =  md5Path + "_" + player_path_md5 + "_PlayCount";
+            }
         }
         else{
-            PlayCount_Key =  _md5Path! + "_" + player_path_md5 + "_PlayCount";
+            if _lience != nil {
+                PlayCount_Key = _lience! as String + "_" + player_path_md5 + "_PlayCount"
+            }
+            else{
+                PlayCount_Key = player_path_md5 + "_PlayCount";
+            }
         }
+        
         let playCount : Int = UserDefaults().integer(forKey: PlayCount_Key!)
         UserDefaults().setValue((playCount + 1), forKey: PlayCount_Key!)
         //MARK: - 初始化视频播放源
@@ -1214,6 +1223,10 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
             
         }
         else{
+           guard let player = _kplayer else{
+               //UIWindow .showTips(NSLocalizedString("初始化播放器句柄失败", comment: ""))
+               return
+           }
             if(_isVideo == true && (_kplayer!.frameWidth > 0)){
                 if(_kplayer!.frameWidth <= _kplayer!.frameHeight){
                     _zoomBtn?.isHidden = true
@@ -1379,15 +1392,25 @@ class VideoPlayerViewController: UIViewController,KanPlayerDelegate {
             
             var PlayCount_Key : String? = nil
             var player_path_md5 = "";
-            if(_playerPath != nil){
-                player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
-            }
-            if _lience != nil {
-                PlayCount_Key = _lience! as String + "_" + _md5Path! + "_" + player_path_md5 + "_PlayCount"
+            player_path_md5 = HelpClass.getMD5(withContent: _playerPath!)
+            
+            if let md5Path = _md5Path{
+                if _lience != nil {
+                    PlayCount_Key = _lience! as String + "_" + md5Path + "_" + player_path_md5 + "_PlayCount"
+                }
+                else{
+                    PlayCount_Key =  md5Path + "_" + player_path_md5 + "_PlayCount";
+                }
             }
             else{
-                PlayCount_Key =  _md5Path! + "_" + player_path_md5 + "_PlayCount";
+                if _lience != nil {
+                    PlayCount_Key = _lience! as String + "_"  + player_path_md5 + "_PlayCount"
+                }
+                else{
+                    PlayCount_Key = player_path_md5 + "_PlayCount";
+                }
             }
+            
             let playCount : Int = UserDefaults().integer(forKey: PlayCount_Key!)
             if (playCount > (_nMaxPlayCount as? Int ?? 0) && ((_nMaxPlayCount as? Int ?? 0) > 0)) {
                 UIWindow .showTips(NSLocalizedString("strErrorPlayTimes", comment: ""))

@@ -122,3 +122,4 @@
 
 "strErrorPlayPageCount" = "嗯……很抱歉，您无权查看此页面。请与管理员联系！";
 "strNotPlayWithRecordScreen" = "录屏状态下禁止播放     ";
+"暂不支持打开此格式的文件" = "暂不支持打开此格式的文件";
